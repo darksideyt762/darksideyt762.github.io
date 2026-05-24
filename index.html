@@ -409,11 +409,27 @@
                 { id: 114, name: "nas",           aliases: ["nas", "an nas", "naas"] }
             ];
 
-            const wordToNumber = {
-                "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,
-                "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,
-                "seventeen":17,"eighteen":18,"nineteen":19,"twenty":20
-            };
+            // Full spoken-number parser: handles "fifty five", "one hundred", "verse twenty two", etc.
+            const _ones = {zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,
+                ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,
+                seventeen:17,eighteen:18,nineteen:19};
+            const _tens = {twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+
+            function wordsToInt(str) {
+                str = str.trim().toLowerCase().replace(/,/g, '');
+                if (/^\d+$/.test(str)) return parseInt(str);
+                const words = str.split(/[\s-]+/);
+                let total = 0, current = 0;
+                for (const w of words) {
+                    if (_ones[w] !== undefined)      current += _ones[w];
+                    else if (_tens[w] !== undefined) current += _tens[w];
+                    else if (w === 'hundred')       { current = current ? current * 100 : 100; }
+                    else if (w === 'thousand')      { total += (current || 1) * 1000; current = 0; }
+                    // ignore "and", "verse", unknown words
+                }
+                total += current;
+                return total > 0 ? total : null;
+            }
 
             const els = {
                 audio: document.getElementById('quran-audio'),
@@ -493,8 +509,7 @@
             }
 
             function findBestSurahMatch(query) {
-                // FIX #5: Use word-boundary-safe stripping
-                query = stripArticles(query.toLowerCase());
+                query = stripArticles(query.toLowerCase()).replace(/[^a-z\s]/g, '').trim();
                 if (!query) return null;
 
                 let bestMatch = null;
@@ -503,11 +518,17 @@
                 for (const surah of allSurahs) {
                     for (const alias of surah.aliases) {
                         const cleanAlias = stripArticles(alias);
-                        if (cleanAlias === query) return surah.id; // Exact match — return immediately
+
+                        // Exact match
+                        if (cleanAlias === query) return surah.id;
+
+                        // Substring bonus: if query is fully contained in alias or vice versa
+                        const substringBonus = (cleanAlias.includes(query) || query.includes(cleanAlias)) ? -1 : 0;
 
                         const dist = levenshtein(query, cleanAlias);
-                        const lengthPenalty = Math.abs(query.length - cleanAlias.length) * 0.5;
-                        const score = dist + lengthPenalty;
+                        // Heavier length penalty so short queries don't wildly match long aliases
+                        const lengthPenalty = Math.abs(query.length - cleanAlias.length) * 0.8;
+                        const score = dist + lengthPenalty + substringBonus;
 
                         if (score < lowestScore) {
                             lowestScore = score;
@@ -516,7 +537,9 @@
                     }
                 }
 
-                return lowestScore <= 3.5 ? bestMatch : null;
+                // Adaptive threshold: shorter queries need tighter match
+                const threshold = query.length <= 4 ? 1.5 : query.length <= 6 ? 2.5 : 3.5;
+                return lowestScore <= threshold ? bestMatch : null;
             }
 
             // --- API ---
@@ -906,13 +929,14 @@
             // --- COMMAND PARSER ---
             function processVoiceCommand(text) {
                 if (!text) return;
-                text = text.replace(/[.,!?"]/g, '').trim();
+                text = text.replace(/[.,!?"]/g, '').trim().toLowerCase();
 
-                if (text === "pause" || text.includes("pause recitation") || text === "stop") { pauseAudio(); return; }
-                if (text === "play" || text === "resume") { playAudio(); return; }
-                if (text.includes("next verse") || text.includes("next ayah")) { playNext(); return; }
-                if (text.includes("previous verse") || text.includes("previous ayah") || text.includes("prev verse")) { playPrev(); return; }
-                if (text.includes("repeat verse")) {
+                // ── Control commands ──
+                if (/^(pause|stop|pause recitation)$/.test(text)) { pauseAudio(); return; }
+                if (/^(play|resume|continue)$/.test(text))         { playAudio();  return; }
+                if (/next (verse|ayah)/.test(text))                { playNext();   return; }
+                if (/(previous|prev|back) (verse|ayah)/.test(text)){ playPrev();   return; }
+                if (/repeat verse/.test(text)) {
                     state.isRepeating = true;
                     els.btnRepeat.classList.remove('text-slate-500');
                     els.btnRepeat.classList.add('text-islamic-400');
@@ -920,29 +944,52 @@
                     return;
                 }
 
-                // Strip action words only from edges, not mid-string (prevents "playplay..." issues)
-                let surahQuery = text.replace(/^(play|read|recite|open|go to)\s+/i, '').trim()
-                                     .replace(/\s+(play|read|recite)$/i, '').trim();
+                // ── Strip leading action words ──
+                let surahQuery = text
+                    .replace(/^(play|read|recite|open|go to|navigate to|show me)\s+/i, '')
+                    .replace(/\bsurah\b/gi, '')
+                    .trim();
+
                 let targetVerseNum = 1;
 
-                const verseMatch = surahQuery.match(/(?:verse|ayah|number)\s+(\w+|\d+)$/i);
-                if (verseMatch) {
-                    const verseRaw = verseMatch[1];
-                    surahQuery = surahQuery.replace(verseMatch[0], '').trim();
-                    if (!isNaN(parseInt(verseRaw))) {
-                        targetVerseNum = parseInt(verseRaw);
-                    } else if (wordToNumber[verseRaw]) {
-                        targetVerseNum = wordToNumber[verseRaw];
+                // ── Extract verse number — supports digits AND spoken numbers ──
+                // Patterns: "verse 5", "verse fifty five", "ayah twenty two", "number 3"
+                // Greedy: capture everything after the keyword as the potential number phrase
+                const verseKeywordMatch = surahQuery.match(
+                    /(?:verse|ayah|ayat|number|no\.?)\s+([\w\s-]+?)\s*$/i
+                );
+                if (verseKeywordMatch) {
+                    const versePhrase = verseKeywordMatch[1].trim();
+                    surahQuery = surahQuery.replace(verseKeywordMatch[0], '').trim();
+                    const parsed = wordsToInt(versePhrase);
+                    if (parsed && parsed > 0) targetVerseNum = parsed;
+                } else {
+                    // No keyword — check if query ends with a standalone number phrase
+                    // e.g. "rahman fifty five" or "yaseen 5"
+                    const trailingNumMatch = surahQuery.match(
+                        /\s+((?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\s-]?(?:one|two|three|four|five|six|seven|eight|nine)?)|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)|\d+)\s*$/i
+                    );
+                    if (trailingNumMatch) {
+                        const parsed = wordsToInt(trailingNumMatch[1]);
+                        if (parsed && parsed > 0) {
+                            targetVerseNum = parsed;
+                            surahQuery = surahQuery.replace(trailingNumMatch[0], '').trim();
+                        }
                     }
+                }
+
+                if (!surahQuery) {
+                    showToast("Please say a Surah name.", "error");
+                    return;
                 }
 
                 const matchedSurahId = findBestSurahMatch(surahQuery);
                 if (matchedSurahId) {
                     const surahName = allSurahs.find(s => s.id === matchedSurahId).name;
-                    showToast(`Playing: Surah ${surahName}, Verse ${targetVerseNum}`, "success");
+                    showToast(`▶ Surah ${surahName} — Verse ${targetVerseNum}`, "success");
                     fetchAyah(matchedSurahId, targetVerseNum, true);
                 } else {
-                    showToast("Command not recognized. Please try again.", "error");
+                    showToast(`Not recognized: "${surahQuery}" — try again`, "error");
                     els.transcriptDisplay.textContent = `Not recognized: "${text}"`;
                 }
             }
