@@ -664,12 +664,12 @@
             if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true;
+                // FIX: Use non-continuous mode — one clean result per hold, no restarts needed
+                recognition.continuous = false;
                 recognition.interimResults = true;
                 recognition.lang = 'en-US';
 
                 recognition.onstart = () => {
-                    // FIX #7: Safer icon update — set class directly instead of classList.replace
                     els.micIcon.className = 'ph ph-microphone text-4xl text-white transition-colors pointer-events-none';
                     els.micStatus.textContent = "LISTENING...";
                     els.micStatus.className = 'mt-4 text-sm text-islamic-400 font-medium tracking-wide';
@@ -680,14 +680,15 @@
 
                 recognition.onresult = (event) => {
                     let interimTranscript = '';
-                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    state.finalTranscript = '';
+                    for (let i = 0; i < event.results.length; ++i) {
                         if (event.results[i].isFinal) {
                             state.finalTranscript += event.results[i][0].transcript;
                         } else {
                             interimTranscript += event.results[i][0].transcript;
                         }
                     }
-                    const displayTxt = (state.finalTranscript + interimTranscript).trim();
+                    const displayTxt = (state.finalTranscript || interimTranscript).trim();
                     if (displayTxt) els.transcriptDisplay.textContent = `"${displayTxt}"`;
                 };
 
@@ -699,19 +700,20 @@
                 };
 
                 recognition.onend = () => {
+                    // If still holding, restart for another round (but reset transcript each time)
                     if (state.isPressing) {
+                        state.finalTranscript = '';
                         try { recognition.start(); } catch(e) {}
-                    } else {
-                        els.transcriptDisplay.classList.remove('animate-pulse-fast');
-                        els.transcriptDisplay.classList.remove('text-islamic-400');
+                        return;
+                    }
+                    els.transcriptDisplay.classList.remove('animate-pulse-fast');
+                    els.transcriptDisplay.classList.remove('text-islamic-400');
 
-                        // FIX #2: Use only state.finalTranscript — never read from DOM text
-                        const textToProcess = state.finalTranscript.trim();
-                        if (textToProcess) {
-                            processVoiceCommand(textToProcess.toLowerCase());
-                        } else {
-                            els.transcriptDisplay.textContent = "Press and hold the mic to speak...";
-                        }
+                    const textToProcess = state.finalTranscript.trim();
+                    if (textToProcess) {
+                        processVoiceCommand(textToProcess.toLowerCase());
+                    } else {
+                        els.transcriptDisplay.textContent = "Press and hold the mic to speak...";
                     }
                 };
             } else {
@@ -770,7 +772,9 @@
                     return;
                 }
 
-                let surahQuery = text.replace(/\b(play|read|recite)\b/g, '').trim();
+                // Strip action words only from edges, not mid-string (prevents "playplay..." issues)
+                let surahQuery = text.replace(/^(play|read|recite|open|go to)\s+/i, '').trim()
+                                     .replace(/\s+(play|read|recite)$/i, '').trim();
                 let targetVerseNum = 1;
 
                 const verseMatch = surahQuery.match(/(?:verse|ayah|number)\s+(\w+|\d+)$/i);
