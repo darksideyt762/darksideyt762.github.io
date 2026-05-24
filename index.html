@@ -5,15 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Voice Quran Player | Push-To-Speak</title>
     
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -49,7 +45,7 @@
             background-color: #022c22;
             color: #f8fafc;
             overflow-x: hidden;
-            -webkit-user-select: none; /* Prevent selection while holding button */
+            -webkit-user-select: none;
             user-select: none;
         }
 
@@ -68,7 +64,6 @@
             box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
         }
 
-        /* Custom Range Slider */
         input[type=range] {
             -webkit-appearance: none;
             width: 100%;
@@ -90,7 +85,6 @@
             border-radius: 2px;
         }
 
-        /* Mic Button States */
         .mic-btn-active {
             background-color: rgba(22, 163, 74, 0.2) !important;
             border-color: #22c55e !important;
@@ -114,8 +108,17 @@
             100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
         }
 
-        .fade-enter { opacity: 0; transform: translateY(10px); }
-        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.5s ease; }
+        /* FIX #3: Proper fade animation — only animate-in class, not start state */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up {
+            animation: fadeInUp 0.5s ease forwards;
+        }
+
+        /* Mobile volume slider */
+        .vol-row { display: flex; align-items: center; gap: 8px; width: 100%; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans antialiased relative">
@@ -125,7 +128,7 @@
 
     <div class="container mx-auto px-4 py-6 max-w-4xl flex-1 flex flex-col">
         
-        <!-- Header Section -->
+        <!-- Header -->
         <header class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 glass p-4 rounded-2xl">
             <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-full bg-gradient-to-br from-islamic-500 to-islamic-800 flex items-center justify-center shadow-lg">
@@ -148,10 +151,10 @@
             </div>
         </header>
 
-        <!-- Main Display Area -->
+        <!-- Main Display -->
         <main class="flex-1 flex flex-col gap-6">
             
-            <!-- Quran Ayah Display -->
+            <!-- Ayah Display -->
             <div class="glass rounded-3xl p-6 md:p-10 flex-1 flex flex-col justify-center relative overflow-hidden transition-all duration-500 min-h-[250px]" id="quran-display">
                 
                 <div id="loading-overlay" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center z-10 hidden">
@@ -159,7 +162,8 @@
                     <p class="text-sm text-islamic-400 tracking-wider font-medium">Fetching Ayah...</p>
                 </div>
 
-                <div id="ayah-content" class="fade-enter fade-enter-active flex flex-col h-full justify-center">
+                <!-- FIX #3: Removed conflicting fade-enter/fade-enter-active classes; use JS-driven fade-in-up -->
+                <div id="ayah-content" class="flex flex-col h-full justify-center">
                     <div class="text-center mb-6">
                         <span id="surah-badge" class="inline-block px-4 py-1.5 rounded-full bg-islamic-900/80 border border-islamic-600 text-islamic-400 text-sm font-medium tracking-widest uppercase shadow-sm">
                             Surah Al-Fatihah
@@ -167,8 +171,8 @@
                     </div>
                     
                     <div class="text-center mb-8">
-                        <p id="arabic-text" class="font-arabic text-3xl md:text-5xl lg:text-6xl leading-[1.8] md:leading-[2] text-white dir-rtl mb-6" dir="rtl">
-                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                        <p id="arabic-text" class="font-arabic text-3xl md:text-5xl lg:text-6xl leading-[1.8] md:leading-[2] text-white mb-6" dir="rtl">
+                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                         </p>
                         <p id="english-text" class="text-slate-300 text-base md:text-xl leading-relaxed font-light">
                             In the name of Allah, the Entirely Merciful, the Especially Merciful.
@@ -181,7 +185,7 @@
                 </div>
             </div>
 
-            <!-- Live Speech Transcript Box -->
+            <!-- Live Speech Transcript -->
             <div class="glass rounded-2xl p-4 flex flex-col items-center justify-center min-h-[80px] border border-islamic-900/50 relative overflow-hidden">
                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-islamic-900/10 to-transparent pointer-events-none"></div>
                 <div id="transcript-container" class="text-center z-10 w-full">
@@ -190,7 +194,7 @@
                 </div>
             </div>
 
-            <!-- Controls Section -->
+            <!-- Controls -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 <!-- Push to Speak Mic -->
@@ -215,8 +219,9 @@
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 w-24 hidden sm:flex">
-                            <i id="vol-icon" class="ph ph-speaker-high text-slate-400 text-lg"></i>
+                        <!-- FIX #6: Volume visible on all screen sizes -->
+                        <div class="vol-row w-28">
+                            <i id="vol-icon" class="ph ph-speaker-high text-slate-400 text-lg flex-shrink-0"></i>
                             <input type="range" id="vol-bar" value="100" min="0" max="100">
                         </div>
 
@@ -234,7 +239,7 @@
                             </button>
                         </div>
                         
-                        <div class="w-24 flex justify-end hidden sm:flex">
+                        <div class="w-24 flex justify-end">
                             <button id="btn-repeat" class="text-slate-500 hover:text-islamic-400 transition-colors">
                                 <i class="ph ph-repeat text-2xl"></i>
                             </button>
@@ -250,7 +255,8 @@
                     <h3 class="text-sm font-medium text-slate-200">Tips & Commands</h3>
                     <i id="help-chevron" class="ph ph-caret-down ml-auto text-slate-400 transition-transform"></i>
                 </div>
-                <div id="help-content" class="hidden grid-cols-1 sm:grid-cols-2 text-sm text-slate-400 gap-y-3 gap-x-6">
+                <!-- FIX #8: Use inline style for toggle instead of conflicting Tailwind hidden+grid -->
+                <div id="help-content" style="display:none;" class="grid grid-cols-1 sm:grid-cols-2 text-sm text-slate-400 gap-y-3 gap-x-6">
                     <div>
                         <strong class="text-islamic-400 block mb-1">Play any Surah:</strong>
                         <ul class="list-disc pl-4 space-y-1 text-xs">
@@ -276,7 +282,6 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
-            // --- STATE MANAGEMENT ---
             const state = {
                 surah: 1,
                 ayah: 1,
@@ -288,131 +293,129 @@
                 finalTranscript: ''
             };
 
-            // --- FULL 114 SURAH DATABASE ---
             const allSurahs = [
-                { id: 1, name: "fatiha", aliases: ["alfatiha", "fatiha", "fateha"] },
-                { id: 2, name: "baqarah", aliases: ["baqarah", "bakara", "baqara", "bakrah"] },
-                { id: 3, name: "ali 'imran", aliases: ["imran", "ali imran", "al imran"] },
-                { id: 4, name: "nisa", aliases: ["nisa", "an nisa"] },
-                { id: 5, name: "maidah", aliases: ["maidah", "maida", "al maidah"] },
-                { id: 6, name: "an'am", aliases: ["anam", "al anam"] },
-                { id: 7, name: "a'raf", aliases: ["araf", "al araf"] },
-                { id: 8, name: "anfal", aliases: ["anfal", "al anfal"] },
-                { id: 9, name: "tawbah", aliases: ["tawbah", "at tawbah", "toba"] },
-                { id: 10, name: "yunus", aliases: ["yunus", "younus"] },
-                { id: 11, name: "hud", aliases: ["hud", "hood"] },
-                { id: 12, name: "yusuf", aliases: ["yusuf", "yousef"] },
-                { id: 13, name: "ra'd", aliases: ["rad", "raad", "ar raad"] },
-                { id: 14, name: "ibrahim", aliases: ["ibrahim", "ebrahim"] },
-                { id: 15, name: "hijr", aliases: ["hijr", "al hijr"] },
-                { id: 16, name: "nahl", aliases: ["nahl", "an nahl"] },
-                { id: 17, name: "isra", aliases: ["isra", "al isra", "bani israil"] },
-                { id: 18, name: "kahf", aliases: ["kahf", "al kahf", "kaf"] },
-                { id: 19, name: "maryam", aliases: ["maryam", "mariam"] },
-                { id: 20, name: "taha", aliases: ["taha", "ta ha"] },
-                { id: 21, name: "anbiya", aliases: ["anbiya", "al anbiya"] },
-                { id: 22, name: "hajj", aliases: ["hajj", "al hajj"] },
-                { id: 23, name: "mu'minun", aliases: ["muminun", "muminoon"] },
-                { id: 24, name: "nur", aliases: ["nur", "noor", "an noor"] },
-                { id: 25, name: "furqan", aliases: ["furqan", "al furqan"] },
-                { id: 26, name: "shu'ara", aliases: ["shuara", "ash shuara"] },
-                { id: 27, name: "naml", aliases: ["naml", "an naml"] },
-                { id: 28, name: "qasas", aliases: ["qasas", "al qasas"] },
-                { id: 29, name: "'ankabut", aliases: ["ankabut", "ankaboot"] },
-                { id: 30, name: "rum", aliases: ["rum", "room", "ar rum"] },
-                { id: 31, name: "luqman", aliases: ["luqman", "lukman"] },
-                { id: 32, name: "sajdah", aliases: ["sajdah", "as sajdah"] },
-                { id: 33, name: "ahzab", aliases: ["ahzab", "al ahzab"] },
-                { id: 34, name: "saba", aliases: ["saba", "sheba"] },
-                { id: 35, name: "fatir", aliases: ["fatir", "faatir"] },
-                { id: 36, name: "yaseen", aliases: ["yaseen", "yasin", "yasmin"] }, // Include common misheard
-                { id: 37, name: "saffat", aliases: ["saffat", "as saffat"] },
-                { id: 38, name: "sad", aliases: ["sad", "saad"] },
-                { id: 39, name: "zumar", aliases: ["zumar", "az zumar"] },
-                { id: 40, name: "ghafir", aliases: ["ghafir", "mumin"] },
-                { id: 41, name: "fussilat", aliases: ["fussilat", "ha mim sajdah"] },
-                { id: 42, name: "shura", aliases: ["shura", "ash shura"] },
-                { id: 43, name: "zukhruf", aliases: ["zukhruf", "az zukhruf"] },
-                { id: 44, name: "dukhan", aliases: ["dukhan", "ad dukhan"] },
-                { id: 45, name: "jathiyah", aliases: ["jathiyah", "al jathiyah"] },
-                { id: 46, name: "ahqaf", aliases: ["ahqaf", "al ahqaf"] },
-                { id: 47, name: "muhammad", aliases: ["muhammad", "mohammad"] },
-                { id: 48, name: "fath", aliases: ["fath", "al fath"] },
-                { id: 49, name: "hujurat", aliases: ["hujurat", "al hujurat"] },
-                { id: 50, name: "qaf", aliases: ["qaf", "qaaf"] },
-                { id: 51, name: "dhariyat", aliases: ["dhariyat", "adh dhariyat"] },
-                { id: 52, name: "tur", aliases: ["tur", "at tur", "toor"] },
-                { id: 53, name: "najm", aliases: ["najm", "an najm"] },
-                { id: 54, name: "qamar", aliases: ["qamar", "al qamar"] },
-                { id: 55, name: "rahman", aliases: ["rahman", "ar rahman", "rehman"] },
-                { id: 56, name: "waqi'ah", aliases: ["waqiah", "al waqiah", "wakia"] },
-                { id: 57, name: "hadid", aliases: ["hadid", "al hadid"] },
-                { id: 58, name: "mujadila", aliases: ["mujadila", "al mujadilah"] },
-                { id: 59, name: "hashr", aliases: ["hashr", "al hashr"] },
-                { id: 60, name: "mumtahanah", aliases: ["mumtahanah", "al mumtahanah"] },
-                { id: 61, name: "saff", aliases: ["saff", "as saff"] },
-                { id: 62, name: "jumu'ah", "aliases": ["jumuah", "jummah"] },
-                { id: 63, name: "munafiqun", aliases: ["munafiqun", "munafiqoon"] },
-                { id: 64, name: "taghabun", aliases: ["taghabun", "at taghabun"] },
-                { id: 65, name: "talaq", aliases: ["talaq", "at talaq"] },
-                { id: 66, name: "tahrim", aliases: ["tahrim", "at tahrim"] },
-                { id: 67, name: "mulk", aliases: ["mulk", "al mulk"] },
-                { id: 68, name: "qalam", aliases: ["qalam", "al qalam"] },
-                { id: 69, name: "haqqah", aliases: ["haqqah", "al haqqah"] },
-                { id: 70, name: "ma'arij", aliases: ["maarij", "al maarij"] },
-                { id: 71, name: "nuh", aliases: ["nuh", "nooh"] },
-                { id: 72, name: "jinn", aliases: ["jinn", "al jinn"] },
-                { id: 73, name: "muzzammil", aliases: ["muzzammil", "al muzzammil"] },
-                { id: 74, name: "muddaththir", aliases: ["muddaththir", "al muddaththir"] },
-                { id: 75, name: "qiyamah", aliases: ["qiyamah", "al qiyamah"] },
-                { id: 76, name: "insan", aliases: ["insan", "al insan", "dahr"] },
-                { id: 77, name: "mursalat", aliases: ["mursalat", "al mursalat"] },
-                { id: 78, name: "naba", aliases: ["naba", "an naba", "amma"] },
-                { id: 79, name: "nazi'at", aliases: ["naziat", "an naziat"] },
-                { id: 80, name: "'abasa", aliases: ["abasa"] },
-                { id: 81, name: "takwir", aliases: ["takwir", "at takweer"] },
-                { id: 82, name: "infitar", aliases: ["infitar", "al infitar"] },
-                { id: 83, name: "mutaffifin", aliases: ["mutaffifin", "al mutaffifeen"] },
-                { id: 84, name: "inshiqaq", aliases: ["inshiqaq", "al inshiqaq"] },
-                { id: 85, name: "buruj", aliases: ["buruj", "burooj", "al burooj"] },
-                { id: 86, name: "tariq", aliases: ["tariq", "at tariq"] },
-                { id: 87, name: "a'la", aliases: ["ala", "al ala"] },
-                { id: 88, name: "ghashiyah", aliases: ["ghashiyah", "al ghashiyah"] },
-                { id: 89, name: "fajr", aliases: ["fajr", "al fajr"] },
-                { id: 90, name: "balad", aliases: ["balad", "al balad"] },
-                { id: 91, name: "shams", aliases: ["shams", "ash shams"] },
-                { id: 92, name: "layl", aliases: ["layl", "lail", "al lail"] },
-                { id: 93, name: "duha", aliases: ["duha", "ad duha", "dhuha"] },
-                { id: 94, name: "sharh", aliases: ["sharh", "ash sharh", "inshirah"] },
-                { id: 95, name: "tin", aliases: ["tin", "at tin", "teen"] },
-                { id: 96, name: "'alaq", aliases: ["alaq", "al alaq", "iqra"] },
-                { id: 97, name: "qadr", aliases: ["qadr", "al qadr"] },
-                { id: 98, name: "bayyinah", aliases: ["bayyinah", "al bayyinah"] },
-                { id: 99, name: "zalzalah", aliases: ["zalzalah", "az zalzalah", "zilzal"] },
-                { id: 100, name: "'adiyat", aliases: ["adiyat", "al adiyat"] },
-                { id: 101, name: "qari'ah", aliases: ["qariah", "al qariah"] },
-                { id: 102, name: "takathur", aliases: ["takathur", "at takathur"] },
-                { id: 103, name: "asr", aliases: ["asr", "al asr"] },
-                { id: 104, name: "humazah", aliases: ["humazah", "al humazah"] },
-                { id: 105, name: "fil", aliases: ["fil", "feel", "al feel"] },
-                { id: 106, name: "quraysh", aliases: ["quraysh", "quraish"] },
-                { id: 107, name: "ma'un", aliases: ["maun", "maoon", "al maoon"] },
-                { id: 108, name: "kawthar", aliases: ["kawthar", "al kawthar", "kauthar"] },
-                { id: 109, name: "kafirun", aliases: ["kafirun", "al kafiroon", "kafiroon"] },
-                { id: 110, name: "nasr", aliases: ["nasr", "an nasr"] },
-                { id: 111, name: "masad", aliases: ["masad", "al masad", "lahab"] },
-                { id: 112, name: "ikhlas", aliases: ["ikhlas", "al ikhlas"] },
-                { id: 113, name: "falaq", aliases: ["falaq", "al falaq"] },
-                { id: 114, name: "nas", aliases: ["nas", "an nas", "naas"] }
+                { id: 1,   name: "fatiha",       aliases: ["alfatiha", "fatiha", "fateha"] },
+                { id: 2,   name: "baqarah",       aliases: ["baqarah", "bakara", "baqara", "bakrah"] },
+                { id: 3,   name: "ali imran",     aliases: ["imran", "ali imran", "al imran"] },
+                { id: 4,   name: "nisa",          aliases: ["nisa", "an nisa"] },
+                { id: 5,   name: "maidah",        aliases: ["maidah", "maida", "al maidah"] },
+                { id: 6,   name: "anam",          aliases: ["anam", "al anam"] },
+                { id: 7,   name: "araf",          aliases: ["araf", "al araf"] },
+                { id: 8,   name: "anfal",         aliases: ["anfal", "al anfal"] },
+                { id: 9,   name: "tawbah",        aliases: ["tawbah", "at tawbah", "toba"] },
+                { id: 10,  name: "yunus",         aliases: ["yunus", "younus"] },
+                { id: 11,  name: "hud",           aliases: ["hud", "hood"] },
+                { id: 12,  name: "yusuf",         aliases: ["yusuf", "yousef"] },
+                { id: 13,  name: "raad",          aliases: ["rad", "raad", "ar raad"] },
+                { id: 14,  name: "ibrahim",       aliases: ["ibrahim", "ebrahim"] },
+                { id: 15,  name: "hijr",          aliases: ["hijr", "al hijr"] },
+                { id: 16,  name: "nahl",          aliases: ["nahl", "an nahl"] },
+                { id: 17,  name: "isra",          aliases: ["isra", "al isra", "bani israil"] },
+                { id: 18,  name: "kahf",          aliases: ["kahf", "al kahf", "kaf"] },
+                { id: 19,  name: "maryam",        aliases: ["maryam", "mariam"] },
+                { id: 20,  name: "taha",          aliases: ["taha", "ta ha"] },
+                { id: 21,  name: "anbiya",        aliases: ["anbiya", "al anbiya"] },
+                { id: 22,  name: "hajj",          aliases: ["hajj", "al hajj"] },
+                { id: 23,  name: "muminun",       aliases: ["muminun", "muminoon"] },
+                { id: 24,  name: "nur",           aliases: ["nur", "noor", "an noor"] },
+                { id: 25,  name: "furqan",        aliases: ["furqan", "al furqan"] },
+                { id: 26,  name: "shuara",        aliases: ["shuara", "ash shuara"] },
+                { id: 27,  name: "naml",          aliases: ["naml", "an naml"] },
+                { id: 28,  name: "qasas",         aliases: ["qasas", "al qasas"] },
+                { id: 29,  name: "ankabut",       aliases: ["ankabut", "ankaboot"] },
+                { id: 30,  name: "rum",           aliases: ["rum", "room", "ar rum"] },
+                { id: 31,  name: "luqman",        aliases: ["luqman", "lukman"] },
+                { id: 32,  name: "sajdah",        aliases: ["sajdah", "as sajdah"] },
+                { id: 33,  name: "ahzab",         aliases: ["ahzab", "al ahzab"] },
+                { id: 34,  name: "saba",          aliases: ["saba", "sheba"] },
+                { id: 35,  name: "fatir",         aliases: ["fatir", "faatir"] },
+                { id: 36,  name: "yaseen",        aliases: ["yaseen", "yasin"] },
+                { id: 37,  name: "saffat",        aliases: ["saffat", "as saffat"] },
+                { id: 38,  name: "sad",           aliases: ["sad", "saad"] },
+                { id: 39,  name: "zumar",         aliases: ["zumar", "az zumar"] },
+                { id: 40,  name: "ghafir",        aliases: ["ghafir", "mumin"] },
+                { id: 41,  name: "fussilat",      aliases: ["fussilat", "ha mim sajdah"] },
+                { id: 42,  name: "shura",         aliases: ["shura", "ash shura"] },
+                { id: 43,  name: "zukhruf",       aliases: ["zukhruf", "az zukhruf"] },
+                { id: 44,  name: "dukhan",        aliases: ["dukhan", "ad dukhan"] },
+                { id: 45,  name: "jathiyah",      aliases: ["jathiyah", "al jathiyah"] },
+                { id: 46,  name: "ahqaf",         aliases: ["ahqaf", "al ahqaf"] },
+                { id: 47,  name: "muhammad",      aliases: ["muhammad", "mohammad"] },
+                { id: 48,  name: "fath",          aliases: ["fath", "al fath"] },
+                { id: 49,  name: "hujurat",       aliases: ["hujurat", "al hujurat"] },
+                { id: 50,  name: "qaf",           aliases: ["qaf", "qaaf"] },
+                { id: 51,  name: "dhariyat",      aliases: ["dhariyat", "adh dhariyat"] },
+                { id: 52,  name: "tur",           aliases: ["tur", "at tur", "toor"] },
+                { id: 53,  name: "najm",          aliases: ["najm", "an najm"] },
+                { id: 54,  name: "qamar",         aliases: ["qamar", "al qamar"] },
+                { id: 55,  name: "rahman",        aliases: ["rahman", "ar rahman", "rehman"] },
+                { id: 56,  name: "waqiah",        aliases: ["waqiah", "al waqiah", "wakia"] },
+                { id: 57,  name: "hadid",         aliases: ["hadid", "al hadid"] },
+                { id: 58,  name: "mujadila",      aliases: ["mujadila", "al mujadilah"] },
+                { id: 59,  name: "hashr",         aliases: ["hashr", "al hashr"] },
+                { id: 60,  name: "mumtahanah",    aliases: ["mumtahanah", "al mumtahanah"] },
+                { id: 61,  name: "saff",          aliases: ["saff", "as saff"] },
+                { id: 62,  name: "jumuah",        aliases: ["jumuah", "jummah"] },
+                { id: 63,  name: "munafiqun",     aliases: ["munafiqun", "munafiqoon"] },
+                { id: 64,  name: "taghabun",      aliases: ["taghabun", "at taghabun"] },
+                { id: 65,  name: "talaq",         aliases: ["talaq", "at talaq"] },
+                { id: 66,  name: "tahrim",        aliases: ["tahrim", "at tahrim"] },
+                { id: 67,  name: "mulk",          aliases: ["mulk", "al mulk"] },
+                { id: 68,  name: "qalam",         aliases: ["qalam", "al qalam"] },
+                { id: 69,  name: "haqqah",        aliases: ["haqqah", "al haqqah"] },
+                { id: 70,  name: "maarij",        aliases: ["maarij", "al maarij"] },
+                { id: 71,  name: "nuh",           aliases: ["nuh", "nooh"] },
+                { id: 72,  name: "jinn",          aliases: ["jinn", "al jinn"] },
+                { id: 73,  name: "muzzammil",     aliases: ["muzzammil", "al muzzammil"] },
+                { id: 74,  name: "muddaththir",   aliases: ["muddaththir", "al muddaththir"] },
+                { id: 75,  name: "qiyamah",       aliases: ["qiyamah", "al qiyamah"] },
+                { id: 76,  name: "insan",         aliases: ["insan", "al insan", "dahr"] },
+                { id: 77,  name: "mursalat",      aliases: ["mursalat", "al mursalat"] },
+                { id: 78,  name: "naba",          aliases: ["naba", "an naba", "amma"] },
+                { id: 79,  name: "naziat",        aliases: ["naziat", "an naziat"] },
+                { id: 80,  name: "abasa",         aliases: ["abasa"] },
+                { id: 81,  name: "takwir",        aliases: ["takwir", "at takweer"] },
+                { id: 82,  name: "infitar",       aliases: ["infitar", "al infitar"] },
+                { id: 83,  name: "mutaffifin",    aliases: ["mutaffifin", "al mutaffifeen"] },
+                { id: 84,  name: "inshiqaq",      aliases: ["inshiqaq", "al inshiqaq"] },
+                { id: 85,  name: "buruj",         aliases: ["buruj", "burooj", "al burooj"] },
+                { id: 86,  name: "tariq",         aliases: ["tariq", "at tariq"] },
+                { id: 87,  name: "ala",           aliases: ["ala", "al ala"] },
+                { id: 88,  name: "ghashiyah",     aliases: ["ghashiyah", "al ghashiyah"] },
+                { id: 89,  name: "fajr",          aliases: ["fajr", "al fajr"] },
+                { id: 90,  name: "balad",         aliases: ["balad", "al balad"] },
+                { id: 91,  name: "shams",         aliases: ["shams", "ash shams"] },
+                { id: 92,  name: "layl",          aliases: ["layl", "lail", "al lail"] },
+                { id: 93,  name: "duha",          aliases: ["duha", "ad duha", "dhuha"] },
+                { id: 94,  name: "sharh",         aliases: ["sharh", "ash sharh", "inshirah"] },
+                { id: 95,  name: "tin",           aliases: ["tin", "at tin", "teen"] },
+                { id: 96,  name: "alaq",          aliases: ["alaq", "al alaq", "iqra"] },
+                { id: 97,  name: "qadr",          aliases: ["qadr", "al qadr"] },
+                { id: 98,  name: "bayyinah",      aliases: ["bayyinah", "al bayyinah"] },
+                { id: 99,  name: "zalzalah",      aliases: ["zalzalah", "az zalzalah", "zilzal"] },
+                { id: 100, name: "adiyat",        aliases: ["adiyat", "al adiyat"] },
+                { id: 101, name: "qariah",        aliases: ["qariah", "al qariah"] },
+                { id: 102, name: "takathur",      aliases: ["takathur", "at takathur"] },
+                { id: 103, name: "asr",           aliases: ["asr", "al asr"] },
+                { id: 104, name: "humazah",       aliases: ["humazah", "al humazah"] },
+                { id: 105, name: "fil",           aliases: ["fil", "feel", "al feel"] },
+                { id: 106, name: "quraysh",       aliases: ["quraysh", "quraish"] },
+                { id: 107, name: "maun",          aliases: ["maun", "maoon", "al maoon"] },
+                { id: 108, name: "kawthar",       aliases: ["kawthar", "al kawthar", "kauthar"] },
+                { id: 109, name: "kafirun",       aliases: ["kafirun", "al kafiroon", "kafiroon"] },
+                { id: 110, name: "nasr",          aliases: ["nasr", "an nasr"] },
+                { id: 111, name: "masad",         aliases: ["masad", "al masad", "lahab"] },
+                { id: 112, name: "ikhlas",        aliases: ["ikhlas", "al ikhlas"] },
+                { id: 113, name: "falaq",         aliases: ["falaq", "al falaq"] },
+                { id: 114, name: "nas",           aliases: ["nas", "an nas", "naas"] }
             ];
 
-            // Words to number mapping for spoken numbers
             const wordToNumber = {
-                "one":1, "two":2, "three":3, "four":4, "five":5, "six":6, "seven":7, "eight":8, "nine":9, "ten":10,
-                "eleven":11, "twelve":12, "thirteen":13, "fourteen":14, "fifteen":15, "sixteen":16, "seventeen":17, "eighteen":18, "nineteen":19, "twenty":20
+                "one":1,"two":2,"three":3,"four":4,"five":5,"six":6,"seven":7,"eight":8,"nine":9,"ten":10,
+                "eleven":11,"twelve":12,"thirteen":13,"fourteen":14,"fifteen":15,"sixteen":16,
+                "seventeen":17,"eighteen":18,"nineteen":19,"twenty":20
             };
 
-            // --- DOM ELEMENTS ---
             const els = {
                 audio: document.getElementById('quran-audio'),
                 micBtn: document.getElementById('mic-btn'),
@@ -453,7 +456,6 @@
                 toast.className = `px-4 py-3 rounded-xl border shadow-xl text-sm transition-all duration-300 transform translate-x-full opacity-0 flex items-center gap-2 ${colors[type]}`;
                 const iconMap = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
                 toast.innerHTML = `<i class="ph ${iconMap[type]} text-xl"></i> <span>${message}</span>`;
-                
                 container.appendChild(toast);
                 setTimeout(() => toast.classList.remove('translate-x-full', 'opacity-0'), 10);
                 setTimeout(() => {
@@ -469,7 +471,6 @@
                 return `${m}:${s.toString().padStart(2, '0')}`;
             }
 
-            // LEVENSHTEIN DISTANCE FOR FUZZY MATCHING (AI-like text matching)
             function levenshtein(s, t) {
                 if (!s.length) return t.length;
                 if (!t.length) return s.length;
@@ -487,35 +488,39 @@
                 return arr[t.length][s.length];
             }
 
+            // FIX #5: Strip leading article prefixes only as whole words, not mid-word
+            function stripArticles(str) {
+                return str.replace(/\b(surah|al|an|as|ar|at|az|ad|ash)\b\s*/g, '').trim();
+            }
+
             function findBestSurahMatch(query) {
-                query = query.toLowerCase().replace(/surah|al\s+|an\s+|as\s+|ar\s+/g, '').trim();
+                // FIX #5: Use word-boundary-safe stripping
+                query = stripArticles(query.toLowerCase());
+                if (!query) return null;
+
                 let bestMatch = null;
-                let lowestDistance = Infinity;
+                let lowestScore = Infinity;
 
                 for (const surah of allSurahs) {
                     for (const alias of surah.aliases) {
-                        // First, check exact substring match for speed
-                        if (alias === query) return surah.id;
+                        const cleanAlias = stripArticles(alias);
+                        if (cleanAlias === query) return surah.id; // Exact match — return immediately
 
-                        // Fuzzy distance check
-                        const dist = levenshtein(query, alias);
-                        
-                        // Give slight penalty to length differences to prioritize exact sounding words
-                        const lengthPenalty = Math.abs(query.length - alias.length) * 0.5;
+                        const dist = levenshtein(query, cleanAlias);
+                        const lengthPenalty = Math.abs(query.length - cleanAlias.length) * 0.5;
                         const score = dist + lengthPenalty;
 
-                        if (score < lowestDistance) {
-                            lowestDistance = score;
+                        if (score < lowestScore) {
+                            lowestScore = score;
                             bestMatch = surah.id;
                         }
                     }
                 }
-                
-                // If it's a reasonably close match (distance <= 3), accept it
-                return lowestDistance <= 3.5 ? bestMatch : null;
+
+                return lowestScore <= 3.5 ? bestMatch : null;
             }
 
-            // --- API FETCHING ---
+            // --- API ---
             async function fetchAyah(surahNum, ayahNum, autoPlay = false) {
                 els.loadingOverlay.classList.remove('hidden');
                 try {
@@ -527,37 +532,36 @@
                     const arData = await arRes.json();
                     const enData = await enRes.json();
 
-                    if (arData.code !== 200 || enData.code !== 200) {
-                        throw new Error("Verse not found");
-                    }
+                    if (arData.code !== 200 || enData.code !== 200) throw new Error("Verse not found");
 
                     state.surah = surahNum;
                     state.ayah = ayahNum;
                     state.totalAyahsInCurrentSurah = arData.data.surah.numberOfAyahs;
-                    
-                    els.ayahContent.classList.remove('fade-enter-active');
-                    void els.ayahContent.offsetWidth; // trigger reflow
-                    
+
+                    // FIX #3: Proper fade animation — remove class, update DOM, re-add
+                    els.ayahContent.classList.remove('fade-in-up');
+                    void els.ayahContent.offsetWidth; // force reflow
+
                     els.surahBadge.textContent = `Surah ${arData.data.surah.englishName}`;
                     els.arabicText.textContent = arData.data.text;
                     els.englishText.textContent = enData.data.text;
                     els.ayahNumber.textContent = `Verse ${state.ayah} of ${state.totalAyahsInCurrentSurah}`;
-                    
-                    els.ayahContent.classList.add('fade-enter-active');
-                    
+
+                    els.ayahContent.classList.add('fade-in-up');
+
                     els.audio.src = arData.data.audio;
                     els.audio.load();
 
                     if (autoPlay) playAudio();
 
                 } catch (error) {
-                    showToast(`Error: ${error.message}. Checking limits...`, 'error');
+                    showToast(`Error: ${error.message}`, 'error');
                 } finally {
                     els.loadingOverlay.classList.add('hidden');
                 }
             }
 
-            // --- AUDIO PLAYER CONTROLS ---
+            // --- AUDIO CONTROLS ---
             function playAudio() {
                 els.audio.play().then(() => {
                     state.isPlaying = true;
@@ -573,11 +577,13 @@
 
             function updatePlayIcon() {
                 if (state.isPlaying) {
-                    els.playIcon.classList.replace('ph-play-circle', 'ph-pause-circle');
-                    els.btnPlay.classList.replace('bg-islamic-600', 'bg-red-600');
+                    els.playIcon.className = 'ph ph-pause-circle text-4xl';
+                    els.btnPlay.classList.remove('bg-islamic-600');
+                    els.btnPlay.classList.add('bg-red-600');
                 } else {
-                    els.playIcon.classList.replace('ph-pause-circle', 'ph-play-circle');
-                    els.btnPlay.classList.replace('bg-red-600', 'bg-islamic-600');
+                    els.playIcon.className = 'ph ph-play-circle text-4xl';
+                    els.btnPlay.classList.remove('bg-red-600');
+                    els.btnPlay.classList.add('bg-islamic-600');
                 }
             }
 
@@ -585,13 +591,18 @@
                 if (state.ayah < state.totalAyahsInCurrentSurah) {
                     fetchAyah(state.surah, state.ayah + 1, true);
                 } else if (state.surah < 114) {
-                    fetchAyah(state.surah + 1, 1, true); // Auto flow to next surah
+                    fetchAyah(state.surah + 1, 1, true);
+                } else {
+                    // FIX #4: Give user feedback at end of Quran
+                    showToast("You have reached the end of the Quran.", 'info');
                 }
             }
 
             function playPrev() {
                 if (state.ayah > 1) {
                     fetchAyah(state.surah, state.ayah - 1, true);
+                } else if (state.surah > 1) {
+                    fetchAyah(state.surah - 1, 1, true);
                 }
             }
 
@@ -604,6 +615,8 @@
             });
 
             els.audio.addEventListener('ended', () => {
+                state.isPlaying = false;
+                updatePlayIcon();
                 if (state.isRepeating) {
                     playAudio();
                 } else {
@@ -611,19 +624,27 @@
                 }
             });
 
-            els.seekBar.addEventListener('input', (e) => els.audio.currentTime = (e.target.value / 100) * els.audio.duration);
+            els.seekBar.addEventListener('input', (e) => {
+                if (!isNaN(els.audio.duration)) {
+                    els.audio.currentTime = (e.target.value / 100) * els.audio.duration;
+                }
+            });
+
             els.volBar.addEventListener('input', (e) => {
                 els.audio.volume = e.target.value / 100;
-                els.volIcon.className = 'ph text-slate-400 text-lg ' + (els.audio.volume === 0 ? 'ph-speaker-x' : els.audio.volume < 0.5 ? 'ph-speaker-low' : 'ph-speaker-high');
+                const v = els.audio.volume;
+                els.volIcon.className = 'ph text-slate-400 text-lg flex-shrink-0 ' +
+                    (v === 0 ? 'ph-speaker-x' : v < 0.5 ? 'ph-speaker-low' : 'ph-speaker-high');
             });
 
             els.btnPlay.addEventListener('click', () => state.isPlaying ? pauseAudio() : playAudio());
             els.btnNext.addEventListener('click', playNext);
             els.btnPrev.addEventListener('click', playPrev);
+
             els.btnRepeat.addEventListener('click', () => {
                 state.isRepeating = !state.isRepeating;
-                els.btnRepeat.classList.toggle('text-slate-500');
-                els.btnRepeat.classList.toggle('text-islamic-400');
+                els.btnRepeat.classList.toggle('text-slate-500', !state.isRepeating);
+                els.btnRepeat.classList.toggle('text-islamic-400', state.isRepeating);
             });
 
             els.reciterSelect.addEventListener('change', (e) => {
@@ -631,26 +652,27 @@
                 fetchAyah(state.surah, state.ayah, state.isPlaying);
             });
 
+            // FIX #8: Simple inline style toggle avoids Tailwind hidden/grid class conflict
             els.toggleHelp.addEventListener('click', () => {
-                els.helpContent.classList.toggle('hidden');
-                els.helpContent.classList.toggle('grid');
-                els.helpChevron.classList.toggle('rotate-180');
+                const isHidden = els.helpContent.style.display === 'none' || els.helpContent.style.display === '';
+                els.helpContent.style.display = isHidden ? 'grid' : 'none';
+                els.helpChevron.classList.toggle('rotate-180', isHidden);
             });
 
-
-            // --- PUSH-TO-SPEAK WEB SPEECH API ---
+            // --- PUSH-TO-SPEAK ---
             let recognition = null;
             if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
                 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
                 recognition = new SpeechRecognition();
-                recognition.continuous = true; // Allows catching complete phrase while holding
-                recognition.interimResults = true; // Crucial for LIVE transcript
+                recognition.continuous = true;
+                recognition.interimResults = true;
                 recognition.lang = 'en-US';
 
                 recognition.onstart = () => {
-                    els.micIcon.classList.replace('text-slate-400', 'text-white');
+                    // FIX #7: Safer icon update — set class directly instead of classList.replace
+                    els.micIcon.className = 'ph ph-microphone text-4xl text-white transition-colors pointer-events-none';
                     els.micStatus.textContent = "LISTENING...";
-                    els.micStatus.classList.replace('text-islamic-500', 'text-islamic-400');
+                    els.micStatus.className = 'mt-4 text-sm text-islamic-400 font-medium tracking-wide';
                     els.transcriptDisplay.textContent = "...";
                     els.transcriptDisplay.classList.add('text-islamic-400', 'animate-pulse-fast');
                     state.finalTranscript = '';
@@ -665,16 +687,12 @@
                             interimTranscript += event.results[i][0].transcript;
                         }
                     }
-                    
-                    // Show live what user is saying
-                    const displayTxt = state.finalTranscript + interimTranscript;
-                    if(displayTxt.trim()) {
-                        els.transcriptDisplay.textContent = `"${displayTxt.trim()}"`;
-                    }
+                    const displayTxt = (state.finalTranscript + interimTranscript).trim();
+                    if (displayTxt) els.transcriptDisplay.textContent = `"${displayTxt}"`;
                 };
 
                 recognition.onerror = (e) => {
-                    if(e.error !== 'aborted') {
+                    if (e.error !== 'aborted') {
                         els.transcriptDisplay.textContent = "Could not understand. Try again.";
                         els.transcriptDisplay.classList.remove('text-islamic-400', 'animate-pulse-fast');
                     }
@@ -682,87 +700,83 @@
 
                 recognition.onend = () => {
                     if (state.isPressing) {
-                        // Restart if user is still holding (prevent cutoff)
-                        try { recognition.start(); } catch(e){}
+                        try { recognition.start(); } catch(e) {}
                     } else {
-                        // They released it, process the final phrase
                         els.transcriptDisplay.classList.remove('animate-pulse-fast');
-                        els.transcriptDisplay.classList.replace('text-islamic-400', 'text-white');
-                        if (state.finalTranscript.trim() || els.transcriptDisplay.textContent.length > 3) {
-                            // Use whatever text is currently displayed if finalTranscript is empty
-                            const textToProcess = state.finalTranscript || els.transcriptDisplay.textContent.replace(/"/g, '');
+                        els.transcriptDisplay.classList.remove('text-islamic-400');
+
+                        // FIX #2: Use only state.finalTranscript — never read from DOM text
+                        const textToProcess = state.finalTranscript.trim();
+                        if (textToProcess) {
                             processVoiceCommand(textToProcess.toLowerCase());
                         } else {
                             els.transcriptDisplay.textContent = "Press and hold the mic to speak...";
-                            els.transcriptDisplay.classList.add('text-slate-300');
                         }
                     }
                 };
+            } else {
+                els.micStatus.textContent = "NOT SUPPORTED";
+                els.micBtn.disabled = true;
+            }
+
+            function setMicActive(active) {
+                if (active) {
+                    els.micBtn.classList.add('mic-btn-active');
+                    if (state.isPlaying) pauseAudio();
+                    try { recognition && recognition.start(); } catch(e) {}
+                } else {
+                    els.micBtn.classList.remove('mic-btn-active');
+                    // FIX #7: Set icon class directly
+                    els.micIcon.className = 'ph ph-microphone text-4xl text-slate-400 transition-colors pointer-events-none';
+                    els.micStatus.textContent = "HOLD TO SPEAK";
+                    els.micStatus.className = 'mt-4 text-sm text-islamic-500 font-medium tracking-wide';
+                    try { recognition && recognition.stop(); } catch(e) {}
+                }
             }
 
             function startMic(e) {
-                if (e) e.preventDefault(); // Prevent context menu
+                e.preventDefault();
                 if (!recognition || state.isPressing) return;
                 state.isPressing = true;
-                
-                els.micBtn.classList.add('mic-btn-active');
-                if(state.isPlaying) pauseAudio(); // Pause audio to hear user clearly
-                
-                try { recognition.start(); } catch(err) {}
+                setMicActive(true);
             }
 
             function stopMic(e) {
-                if (e) e.preventDefault();
                 if (!recognition || !state.isPressing) return;
                 state.isPressing = false;
-                
-                els.micBtn.classList.remove('mic-btn-active');
-                els.micIcon.classList.replace('text-white', 'text-slate-400');
-                els.micStatus.textContent = "HOLD TO SPEAK";
-                els.micStatus.classList.replace('text-islamic-400', 'text-islamic-500');
-                
-                try { recognition.stop(); } catch(err) {}
+                setMicActive(false);
             }
 
-            // Mouse & Touch events for Push-To-Speak
             els.micBtn.addEventListener('mousedown', startMic);
-            els.micBtn.addEventListener('touchstart', startMic, {passive: false});
-            
+            els.micBtn.addEventListener('touchstart', startMic, { passive: false });
             window.addEventListener('mouseup', stopMic);
             window.addEventListener('touchend', stopMic);
             window.addEventListener('mouseleave', stopMic);
 
-
-            // --- SMARTER COMMAND PARSER ---
+            // --- COMMAND PARSER ---
             function processVoiceCommand(text) {
                 if (!text) return;
                 text = text.replace(/[.,!?"]/g, '').trim();
 
-                // 1. Basic Control Commands
                 if (text === "pause" || text.includes("pause recitation") || text === "stop") { pauseAudio(); return; }
                 if (text === "play" || text === "resume") { playAudio(); return; }
                 if (text.includes("next verse") || text.includes("next ayah")) { playNext(); return; }
-                if (text.includes("previous verse") || text.includes("previous ayah")) { playPrev(); return; }
-                if (text.includes("repeat verse")) { 
+                if (text.includes("previous verse") || text.includes("previous ayah") || text.includes("prev verse")) { playPrev(); return; }
+                if (text.includes("repeat verse")) {
                     state.isRepeating = true;
+                    els.btnRepeat.classList.remove('text-slate-500');
                     els.btnRepeat.classList.add('text-islamic-400');
-                    showToast("Repeat Verse: ON", "success"); return; 
+                    showToast("Repeat Verse: ON", "success");
+                    return;
                 }
 
-                // 2. Complex Parser for "Surah X Verse Y"
-                // Split command into Surah part and Verse part
-                let surahQuery = text;
+                let surahQuery = text.replace(/\b(play|read|recite)\b/g, '').trim();
                 let targetVerseNum = 1;
 
-                // Remove generic action words
-                surahQuery = surahQuery.replace(/play|read|recite/g, '').trim();
-
-                // Check if verse/ayah is mentioned
                 const verseMatch = surahQuery.match(/(?:verse|ayah|number)\s+(\w+|\d+)$/i);
                 if (verseMatch) {
                     const verseRaw = verseMatch[1];
-                    surahQuery = surahQuery.replace(verseMatch[0], '').trim(); // Isolate Surah name
-                    
+                    surahQuery = surahQuery.replace(verseMatch[0], '').trim();
                     if (!isNaN(parseInt(verseRaw))) {
                         targetVerseNum = parseInt(verseRaw);
                     } else if (wordToNumber[verseRaw]) {
@@ -770,20 +784,19 @@
                     }
                 }
 
-                // 3. Find the best matching Surah using AI Fuzzy Match
                 const matchedSurahId = findBestSurahMatch(surahQuery);
-
                 if (matchedSurahId) {
-                    showToast(`Found: Surah ${allSurahs.find(s=>s.id === matchedSurahId).name}, Verse ${targetVerseNum}`, "success");
+                    const surahName = allSurahs.find(s => s.id === matchedSurahId).name;
+                    showToast(`Playing: Surah ${surahName}, Verse ${targetVerseNum}`, "success");
                     fetchAyah(matchedSurahId, targetVerseNum, true);
                 } else {
                     showToast("Command not recognized. Please try again.", "error");
+                    els.transcriptDisplay.textContent = `Not recognized: "${text}"`;
                 }
             }
 
-            // Init default
+            // Init
             fetchAyah(1, 1, false);
-
         });
     </script>
 </body>
