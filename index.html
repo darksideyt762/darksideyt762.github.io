@@ -3,121 +3,751 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice Quran Player</title>
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
+    <title>Voice Quran Player | Hands-Free Recitation</title>
+    
+    <!-- Fonts: Inter for UI, Amiri for Arabic text -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons for UI Elements -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        arabic: ['Amiri', 'serif'],
+                    },
+                    colors: {
+                        islamic: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#064e3b',
+                            950: '#022c22',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'blob': 'blob 7s infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #022c22;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+
+        /* Quranic Pattern Background overlay */
+        .bg-pattern {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2316a34a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            z-index: -1;
+        }
+
+        /* Glassmorphism utility */
+        .glass {
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar-thumb { background: #16a34a; border-radius: 10px; }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #22c55e;
+            cursor: pointer;
+            margin-top: -5px;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+        input[type=range]:focus { outline: none; }
+
+        /* Mic Ripple Animation */
+        .mic-ripple {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background-color: rgba(34, 197, 94, 0.4);
+            z-index: -1;
+            opacity: 0;
+        }
+        .is-listening .mic-ripple {
+            animation: ripple 1.5s linear infinite;
+        }
+        @keyframes ripple {
+            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+            100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+        }
+
+        /* Fade transitions */
+        .fade-enter { opacity: 0; transform: translateY(10px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.5s ease; }
+    </style>
 </head>
-<body>
-    <!-- Initial Overlay for Browser Audio/Mic Permissions -->
-    <div id="start-overlay" class="overlay active">
-        <div class="glass-panel text-center">
-            <i class="fa-solid fa-microphone-lines start-icon"></i>
-            <h1>Voice Quran Player</h1>
-            <p>Control the Quran recitation entirely with your voice.</p>
-            <p class="examples">Say: "Play Surah Yaseen verse 10"<br>"Next verse" | "Pause" | "Resume"</p>
-            <button id="start-btn" class="btn-primary">Enable Microphone & Start</button>
-            <p id="permission-error" class="error-text hidden"></p>
-        </div>
+<body class="min-h-screen flex flex-col font-sans antialiased text-slate-100 relative">
+
+    <!-- Ambient Background Blobs -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-96 h-96 bg-islamic-800 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-blob"></div>
+        <div class="absolute top-[20%] right-[-10%] w-96 h-96 bg-islamic-600 rounded-full mix-blend-screen filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute bottom-[-20%] left-[20%] w-96 h-96 bg-teal-800 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-blob animation-delay-4000"></div>
     </div>
+    <div class="bg-pattern"></div>
 
-    <!-- Main Background -->
-    <div class="app-background"></div>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- Main Application Container -->
-    <div class="app-container">
+    <div class="container mx-auto px-4 py-8 max-w-4xl flex-1 flex flex-col">
         
-        <!-- Header & Settings -->
-        <header class="glass-panel flex-row space-between">
-            <div class="brand">
-                <i class="fa-solid fa-book-quran"></i>
-                <h2>Voice Quran</h2>
+        <!-- Header Section -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4 glass p-4 rounded-2xl">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-islamic-500 to-islamic-800 flex items-center justify-center shadow-lg">
+                    <i class="ph ph-book-open-text text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">Voice Quran Player</h1>
+                    <p class="text-xs text-islamic-400">Interactive Hands-Free Recitation</p>
+                </div>
             </div>
-            <div class="settings">
-                <select id="reciter-select" class="glass-select">
+            
+            <div class="flex items-center gap-3 w-full md:w-auto">
+                <i class="ph ph-user-sound text-islamic-400 text-xl"></i>
+                <select id="reciter-select" class="bg-slate-800/50 border border-slate-700 text-sm rounded-xl px-4 py-2 text-white focus:outline-none focus:border-islamic-500 w-full md:w-auto cursor-pointer transition-colors">
                     <option value="ar.alafasy">Mishary Rashid Alafasy</option>
                     <option value="ar.abdulbasitmurattal">Abdul Basit Abdus Samad</option>
-                    <option value="ar.shuraym">Saud Al-Shuraim</option>
-                    <option value="ar.sudais">Abdurrahmaan As-Sudais</option>
+                    <option value="ar.abdurrahmaansudais">Abdurrahmaan As-Sudais</option>
+                    <option value="ar.hudhaify">Ali Al-Huthaify</option>
                 </select>
             </div>
         </header>
 
-        <!-- Voice Status Bar -->
-        <div class="voice-status-bar glass-panel flex-row">
-            <div class="mic-container">
-                <div id="mic-pulse" class="blob"></div>
-                <i id="mic-icon" class="fa-solid fa-microphone"></i>
-            </div>
-            <div class="transcript-container">
-                <span class="status-label" id="listening-status">Listening...</span>
-                <p id="transcript">Say a command...</p>
-            </div>
-        </div>
-
-        <!-- Main Quran Display -->
-        <main class="quran-display glass-panel">
-            <!-- Loading Indicator -->
-            <div id="loader" class="loader-container hidden">
-                <div class="spinner"></div>
-                <p>Fetching Verse...</p>
-            </div>
-
-            <!-- Error Notification -->
-            <div id="error-toast" class="error-toast hidden">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                <span id="error-message">Error message</span>
-            </div>
-
-            <!-- Content -->
-            <div id="quran-content">
-                <div class="verse-meta flex-row space-between">
-                    <h3 id="surah-name-display">Surah Name</h3>
-                    <span id="verse-number-display" class="badge">Verse 1</span>
-                </div>
-                
-                <div class="arabic-container">
-                    <p id="arabic-text" class="arabic-font" dir="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-                </div>
-                
-                <div class="translation-container">
-                    <p id="english-text">In the name of God, The Most Gracious, The Most Merciful.</p>
-                </div>
-            </div>
-        </main>
-
-        <!-- Audio Player Controls -->
-        <div class="player-controls glass-panel">
-            <!-- Progress Bar -->
-            <div class="progress-container">
-                <span id="time-current">0:00</span>
-                <input type="range" id="seek-bar" value="0" min="0" max="100" step="1">
-                <span id="time-total">0:00</span>
-            </div>
+        <!-- Main Display Area -->
+        <main class="flex-1 flex flex-col gap-6">
             
-            <!-- Controls -->
-            <div class="control-buttons flex-row">
-                <div class="volume-container flex-row">
-                    <i class="fa-solid fa-volume-high" id="volume-icon"></i>
-                    <input type="range" id="volume-bar" value="100" min="0" max="100">
-                </div>
+            <!-- Quran Ayah Display -->
+            <div class="glass rounded-3xl p-6 md:p-10 flex-1 flex flex-col justify-center relative overflow-hidden transition-all duration-500 min-h-[300px]" id="quran-display">
                 
-                <div class="main-buttons flex-row">
-                    <button class="ctrl-btn" id="btn-prev"><i class="fa-solid fa-backward-step"></i></button>
-                    <button class="ctrl-btn play-pause-btn" id="btn-play-pause">
-                        <i class="fa-solid fa-play" id="play-pause-icon"></i>
-                    </button>
-                    <button class="ctrl-btn" id="btn-next"><i class="fa-solid fa-forward-step"></i></button>
-                    <button class="ctrl-btn" id="btn-repeat"><i class="fa-solid fa-repeat"></i></button>
+                <!-- Loading Overlay -->
+                <div id="loading-overlay" class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 hidden">
+                    <i class="ph ph-spinner animate-spin text-4xl text-islamic-500 mb-2"></i>
+                    <p class="text-sm text-slate-300 tracking-wider">Fetching Ayah...</p>
                 </div>
 
-                <div class="empty-spacer"></div>
+                <div id="ayah-content" class="fade-enter fade-enter-active flex flex-col h-full justify-center">
+                    <div class="text-center mb-6">
+                        <span id="surah-badge" class="inline-block px-4 py-1.5 rounded-full bg-islamic-900/60 border border-islamic-700 text-islamic-400 text-sm font-medium tracking-widest uppercase shadow-sm">
+                            Surah Al-Fatihah
+                        </span>
+                    </div>
+                    
+                    <div class="text-center mb-8">
+                        <!-- Arabic Text -->
+                        <p id="arabic-text" class="font-arabic text-4xl md:text-5xl lg:text-6xl leading-[2] md:leading-[2] text-white dir-rtl mb-6 select-text" dir="rtl">
+                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                        </p>
+                        <!-- English Translation -->
+                        <p id="english-text" class="text-slate-300 text-lg md:text-xl leading-relaxed font-light">
+                            In the name of Allah, the Entirely Merciful, the Especially Merciful.
+                        </p>
+                    </div>
+
+                    <div class="mt-auto text-center">
+                        <p id="ayah-number" class="text-slate-500 text-sm font-medium">Verse 1</p>
+                    </div>
+                </div>
             </div>
-        </div>
+
+            <!-- Voice Control & Audio Player Bottom Section -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                
+                <!-- Voice Assistant Module -->
+                <div class="glass rounded-3xl p-6 flex flex-col items-center justify-center md:col-span-1 text-center relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-islamic-900/20 pointer-events-none"></div>
+                    
+                    <h3 class="text-sm text-slate-400 mb-4 font-medium uppercase tracking-widest">Voice Command</h3>
+                    
+                    <button id="mic-btn" class="relative w-20 h-20 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center shadow-xl transition-all duration-300 hover:border-islamic-500 group-hover:scale-105 z-10 focus:outline-none">
+                        <div class="mic-ripple"></div>
+                        <i id="mic-icon" class="ph ph-microphone text-3xl text-slate-400 transition-colors"></i>
+                    </button>
+                    
+                    <div class="mt-6 min-h-[40px] flex items-center justify-center w-full px-2">
+                        <p id="transcript-display" class="text-sm text-islamic-400 italic">Click mic to start listening...</p>
+                    </div>
+                </div>
+
+                <!-- Media Player Module -->
+                <div class="glass rounded-3xl p-6 md:col-span-2 flex flex-col justify-between">
+                    <audio id="quran-audio" preload="auto"></audio>
+                    
+                    <!-- Progress Bar -->
+                    <div class="mb-6">
+                        <input type="range" id="seek-bar" value="0" min="0" max="100" step="0.1" class="w-full">
+                        <div class="flex justify-between text-xs text-slate-400 mt-2 font-medium">
+                            <span id="time-current">0:00</span>
+                            <span id="time-total">0:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="flex items-center justify-between">
+                        <!-- Volume Control -->
+                        <div class="flex items-center gap-2 w-24 hidden sm:flex">
+                            <i id="vol-icon" class="ph ph-speaker-high text-slate-400 text-lg cursor-pointer"></i>
+                            <input type="range" id="vol-bar" value="100" min="0" max="100" class="w-full">
+                        </div>
+
+                        <!-- Playback Controls -->
+                        <div class="flex items-center gap-4 justify-center flex-1">
+                            <button id="btn-prev" class="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors focus:outline-none">
+                                <i class="ph ph-skip-back-circle text-2xl"></i>
+                            </button>
+                            
+                            <button id="btn-play" class="w-14 h-14 rounded-full bg-islamic-600 flex items-center justify-center text-white hover:bg-islamic-500 shadow-[0_0_15px_rgba(22,163,74,0.4)] transition-all transform hover:scale-105 focus:outline-none">
+                                <i id="play-icon" class="ph ph-play-circle text-3xl"></i>
+                            </button>
+                            
+                            <button id="btn-next" class="w-10 h-10 rounded-full bg-slate-800/50 flex items-center justify-center text-slate-300 hover:text-white hover:bg-slate-700 transition-colors focus:outline-none">
+                                <i class="ph ph-skip-forward-circle text-2xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Repeat Toggle -->
+                        <div class="w-24 flex justify-end hidden sm:flex">
+                            <button id="btn-repeat" class="text-slate-500 hover:text-white transition-colors focus:outline-none">
+                                <i class="ph ph-repeat text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Help / Commands Guide -->
+            <div class="glass rounded-2xl p-5 mt-4">
+                <div class="flex items-center gap-2 mb-3 cursor-pointer select-none" id="toggle-help">
+                    <i class="ph ph-info text-islamic-400"></i>
+                    <h3 class="text-sm font-medium text-slate-200">Supported Voice Commands</h3>
+                    <i id="help-chevron" class="ph ph-caret-down ml-auto text-slate-400 transition-transform"></i>
+                </div>
+                <div id="help-content" class="hidden grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-2 gap-x-4 text-xs text-slate-400">
+                    <p><span class="text-islamic-400 font-medium">"Play Surah Yaseen verse 10"</span></p>
+                    <p><span class="text-islamic-400 font-medium">"Play Surah Mulk"</span> (starts from v1)</p>
+                    <p><span class="text-islamic-400 font-medium">"Next verse"</span> or <span class="text-islamic-400 font-medium">"Previous verse"</span></p>
+                    <p><span class="text-islamic-400 font-medium">"Pause"</span> or <span class="text-islamic-400 font-medium">"Resume"</span></p>
+                    <p><span class="text-islamic-400 font-medium">"Repeat verse"</span></p>
+                    <p><span class="text-islamic-400 font-medium">"Stop recitation"</span></p>
+                </div>
+            </div>
+
+        </main>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Application Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- STATE MANAGEMENT ---
+            const state = {
+                surah: 1,
+                ayah: 1,
+                totalAyahsInCurrentSurah: 7, // Fatiha default
+                isPlaying: false,
+                isListening: false,
+                isRepeating: false,
+                reciter: 'ar.alafasy',
+                audioData: null,
+                textData: null,
+                translationData: null
+            };
+
+            // --- SURAH DATABASE (Mapping Names to Numbers) ---
+            const surahMap = {
+                "fatiha": 1, "al fatiha": 1, "baqarah": 2, "al baqarah": 2, "imran": 3, "al imran": 3, "nisa": 4, "an nisa": 4,
+                "maidah": 5, "al maidah": 5, "anam": 6, "al anam": 6, "araf": 7, "al araf": 7, "anfal": 8, "al anfal": 8,
+                "tawbah": 9, "at tawbah": 9, "yunus": 10, "hud": 11, "yusuf": 12, "raad": 13, "ar raad": 13, "ibrahim": 14,
+                "hijr": 15, "al hijr": 15, "nahl": 16, "an nahl": 16, "isra": 17, "al isra": 17, "kahf": 18, "al kahf": 18,
+                "maryam": 19, "taha": 20, "anbiya": 21, "al anbiya": 21, "hajj": 22, "al hajj": 22, "muminoon": 23, "al muminoon": 23,
+                "noor": 24, "an noor": 24, "furqan": 25, "al furqan": 25, "shuara": 26, "ash shuara": 26, "naml": 27, "an naml": 27,
+                "qasas": 28, "al qasas": 28, "ankaboot": 29, "al ankaboot": 29, "rum": 30, "ar rum": 30, "luqman": 31,
+                "sajdah": 32, "as sajdah": 32, "ahzab": 33, "al ahzab": 33, "saba": 34, "fatir": 35, "yaseen": 36, "yasin": 36,
+                "saffat": 37, "as saffat": 37, "sad": 38, "zumar": 39, "az zumar": 39, "ghafir": 40, "fussilat": 41,
+                "shura": 42, "ash shura": 42, "zukhruf": 43, "az zukhruf": 43, "dukhan": 44, "ad dukhan": 44, "jathiyah": 45, "al jathiyah": 45,
+                "ahqaf": 46, "al ahqaf": 46, "muhammad": 47, "fath": 48, "al fath": 48, "hujurat": 49, "al hujurat": 49,
+                "qaf": 50, "dhariyat": 51, "adh dhariyat": 51, "tur": 52, "at tur": 52, "najm": 53, "an najm": 53, "qamar": 54, "al qamar": 54,
+                "rahman": 55, "ar rahman": 55, "rehman": 55, "waqiah": 56, "al waqiah": 56, "hadid": 57, "al hadid": 57,
+                "mujadilah": 58, "al mujadilah": 58, "hashr": 59, "al hashr": 59, "mumtahanah": 60, "al mumtahanah": 60,
+                "saff": 61, "as saff": 61, "jumuah": 62, "al jumuah": 62, "munafiqoon": 63, "al munafiqoon": 63, "taghabun": 64, "at taghabun": 64,
+                "talaq": 65, "at talaq": 65, "tahrim": 66, "at tahrim": 66, "mulk": 67, "al mulk": 67, "qalam": 68, "al qalam": 68,
+                "haqqah": 69, "al haqqah": 69, "maarij": 70, "al maarij": 70, "nooh": 71, "jinn": 72, "al jinn": 72,
+                "muzzammil": 73, "al muzzammil": 73, "muddaththir": 74, "al muddaththir": 74, "qiyamah": 75, "al qiyamah": 75,
+                "insan": 76, "al insan": 76, "mursalat": 77, "al mursalat": 77, "naba": 78, "an naba": 78, "naziat": 79, "an naziat": 79,
+                "abasa": 80, "takweer": 81, "at takweer": 81, "infitar": 82, "al infitar": 82, "mutaffifeen": 83, "al mutaffifeen": 83,
+                "inshiqaq": 84, "al inshiqaq": 84, "burooj": 85, "al burooj": 85, "tariq": 86, "at tariq": 86, "ala": 87, "al ala": 87,
+                "ghashiyah": 88, "al ghashiyah": 88, "fajr": 89, "al fajr": 89, "balad": 90, "al balad": 90, "shams": 91, "ash shams": 91,
+                "lail": 92, "al lail": 92, "duha": 93, "ad duha": 93, "sharh": 94, "ash sharh": 94, "tin": 95, "at tin": 95,
+                "alaq": 96, "al alaq": 96, "qadr": 97, "al qadr": 97, "bayyinah": 98, "al bayyinah": 98, "zalzalah": 99, "az zalzalah": 99,
+                "adiyat": 100, "al adiyat": 100, "qariah": 101, "al qariah": 101, "takathur": 102, "at takathur": 102, "asr": 103, "al asr": 103,
+                "humazah": 104, "al humazah": 104, "feel": 105, "al feel": 105, "quraish": 106, "maoon": 107, "al maoon": 107,
+                "kawthar": 108, "al kawthar": 108, "kafiroon": 109, "al kafiroon": 109, "nasr": 110, "an nasr": 110, "masad": 111, "al masad": 111,
+                "ikhlas": 112, "al ikhlas": 112, "falaq": 113, "al falaq": 113, "nas": 114, "an nas": 114
+            };
+
+            // Convert word numbers to digits for better recognition logic
+            const wordToNumber = {
+                "one":1, "two":2, "three":3, "four":4, "five":5, "six":6, "seven":7, "eight":8, "nine":9, "ten":10,
+                "eleven":11, "twelve":12, "thirteen":13, "fourteen":14, "fifteen":15, "sixteen":16, "seventeen":17, "eighteen":18, "nineteen":19, "twenty":20
+            };
+
+            // --- DOM ELEMENTS ---
+            const els = {
+                audio: document.getElementById('quran-audio'),
+                micBtn: document.getElementById('mic-btn'),
+                micIcon: document.getElementById('mic-icon'),
+                transcriptDisplay: document.getElementById('transcript-display'),
+                btnPlay: document.getElementById('btn-play'),
+                playIcon: document.getElementById('play-icon'),
+                btnNext: document.getElementById('btn-next'),
+                btnPrev: document.getElementById('btn-prev'),
+                btnRepeat: document.getElementById('btn-repeat'),
+                seekBar: document.getElementById('seek-bar'),
+                timeCurrent: document.getElementById('time-current'),
+                timeTotal: document.getElementById('time-total'),
+                volBar: document.getElementById('vol-bar'),
+                volIcon: document.getElementById('vol-icon'),
+                reciterSelect: document.getElementById('reciter-select'),
+                loadingOverlay: document.getElementById('loading-overlay'),
+                ayahContent: document.getElementById('ayah-content'),
+                surahBadge: document.getElementById('surah-badge'),
+                arabicText: document.getElementById('arabic-text'),
+                englishText: document.getElementById('english-text'),
+                ayahNumber: document.getElementById('ayah-number'),
+                toggleHelp: document.getElementById('toggle-help'),
+                helpContent: document.getElementById('help-content'),
+                helpChevron: document.getElementById('help-chevron')
+            };
+
+            // --- UTILITIES ---
+            function showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                
+                const colors = {
+                    info: 'bg-slate-800 border-slate-700 text-white',
+                    success: 'bg-islamic-900 border-islamic-700 text-islamic-100',
+                    error: 'bg-red-900 border-red-700 text-red-100'
+                };
+
+                toast.className = `px-4 py-3 rounded-xl border shadow-lg text-sm transition-all duration-300 transform translate-x-full opacity-0 flex items-center gap-2 ${colors[type]}`;
+                
+                const iconMap = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
+                toast.innerHTML = `<i class="ph ${iconMap[type]} text-lg"></i> <span>${message}</span>`;
+                
+                container.appendChild(toast);
+                
+                // Animate in
+                setTimeout(() => {
+                    toast.classList.remove('translate-x-full', 'opacity-0');
+                }, 10);
+
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            }
+
+            function formatTime(seconds) {
+                if (isNaN(seconds)) return "0:00";
+                const m = Math.floor(seconds / 60);
+                const s = Math.floor(seconds % 60);
+                return `${m}:${s.toString().padStart(2, '0')}`;
+            }
+
+            function triggerUIAnimation() {
+                els.ayahContent.classList.remove('fade-enter-active');
+                void els.ayahContent.offsetWidth; // trigger reflow
+                els.ayahContent.classList.add('fade-enter-active');
+            }
+
+            // --- API FETCHING ---
+            async function fetchAyah(surahNum, ayahNum, autoPlay = false) {
+                els.loadingOverlay.classList.remove('hidden');
+                
+                try {
+                    // Fetch Arabic + Audio and English Translation in parallel
+                    const [arRes, enRes] = await Promise.all([
+                        fetch(`https://api.alquran.cloud/v1/ayah/${surahNum}:${ayahNum}/${state.reciter}`),
+                        fetch(`https://api.alquran.cloud/v1/ayah/${surahNum}:${ayahNum}/en.asad`)
+                    ]);
+
+                    const arData = await arRes.json();
+                    const enData = await enRes.json();
+
+                    if (arData.code !== 200 || enData.code !== 200) {
+                        throw new Error(arData.data || "Invalid Verse");
+                    }
+
+                    // Update State
+                    state.surah = surahNum;
+                    state.ayah = ayahNum;
+                    state.totalAyahsInCurrentSurah = arData.data.surah.numberOfAyahs;
+                    state.audioData = arData.data;
+                    state.translationData = enData.data;
+
+                    // Update UI
+                    updateDisplay();
+                    
+                    // Setup Audio
+                    els.audio.src = state.audioData.audio;
+                    els.audio.load();
+
+                    if (autoPlay) {
+                        playAudio();
+                    }
+
+                } catch (error) {
+                    showToast(`Error: Could not load verse. ${error.message}`, 'error');
+                } finally {
+                    els.loadingOverlay.classList.add('hidden');
+                }
+            }
+
+            function updateDisplay() {
+                triggerUIAnimation();
+                els.surahBadge.textContent = `Surah ${state.audioData.surah.englishName} (${state.audioData.surah.englishNameTranslation})`;
+                els.arabicText.textContent = state.audioData.text;
+                els.englishText.textContent = state.translationData.text;
+                els.ayahNumber.textContent = `Verse ${state.ayah} of ${state.totalAyahsInCurrentSurah}`;
+            }
+
+            // --- AUDIO PLAYER CONTROLS ---
+            function playAudio() {
+                els.audio.play().then(() => {
+                    state.isPlaying = true;
+                    updatePlayIcon();
+                }).catch(e => {
+                    showToast("Playback prevented. Please interact with the page first.", 'error');
+                });
+            }
+
+            function pauseAudio() {
+                els.audio.pause();
+                state.isPlaying = false;
+                updatePlayIcon();
+            }
+
+            function togglePlay() {
+                if (state.isPlaying) pauseAudio();
+                else playAudio();
+            }
+
+            function updatePlayIcon() {
+                if (state.isPlaying) {
+                    els.playIcon.classList.replace('ph-play-circle', 'ph-pause-circle');
+                    els.btnPlay.classList.replace('bg-islamic-600', 'bg-red-600');
+                    els.btnPlay.classList.replace('shadow-[0_0_15px_rgba(22,163,74,0.4)]', 'shadow-[0_0_15px_rgba(220,38,38,0.4)]');
+                } else {
+                    els.playIcon.classList.replace('ph-pause-circle', 'ph-play-circle');
+                    els.btnPlay.classList.replace('bg-red-600', 'bg-islamic-600');
+                    els.btnPlay.classList.replace('shadow-[0_0_15px_rgba(220,38,38,0.4)]', 'shadow-[0_0_15px_rgba(22,163,74,0.4)]');
+                }
+            }
+
+            function playNext() {
+                if (state.ayah < state.totalAyahsInCurrentSurah) {
+                    fetchAyah(state.surah, state.ayah + 1, true);
+                } else if (state.surah < 114) {
+                    fetchAyah(state.surah + 1, 1, true);
+                } else {
+                    showToast("End of Quran reached.", "info");
+                }
+            }
+
+            function playPrev() {
+                if (state.ayah > 1) {
+                    fetchAyah(state.surah, state.ayah - 1, true);
+                } else if (state.surah > 1) {
+                    // Need to fetch previous surah to know total ayahs...
+                    // For simplicity, just fetch verse 1 of previous surah
+                    fetchAyah(state.surah - 1, 1, true); 
+                }
+            }
+
+            // Audio Event Listeners
+            els.audio.addEventListener('timeupdate', () => {
+                const current = els.audio.currentTime;
+                const duration = els.audio.duration;
+                if (!isNaN(duration)) {
+                    els.seekBar.value = (current / duration) * 100;
+                    els.timeCurrent.textContent = formatTime(current);
+                    els.timeTotal.textContent = formatTime(duration);
+                }
+            });
+
+            els.audio.addEventListener('ended', () => {
+                if (state.isRepeating) {
+                    playAudio();
+                } else {
+                    playNext();
+                }
+            });
+
+            els.seekBar.addEventListener('input', (e) => {
+                const time = (e.target.value / 100) * els.audio.duration;
+                els.audio.currentTime = time;
+            });
+
+            els.volBar.addEventListener('input', (e) => {
+                els.audio.volume = e.target.value / 100;
+                updateVolIcon(els.audio.volume);
+            });
+
+            function updateVolIcon(vol) {
+                els.volIcon.className = 'ph text-slate-400 text-lg cursor-pointer ' + 
+                    (vol === 0 ? 'ph-speaker-x' : vol < 0.5 ? 'ph-speaker-low' : 'ph-speaker-high');
+            }
+
+            els.btnPlay.addEventListener('click', togglePlay);
+            els.btnNext.addEventListener('click', playNext);
+            els.btnPrev.addEventListener('click', playPrev);
+            
+            els.btnRepeat.addEventListener('click', () => {
+                state.isRepeating = !state.isRepeating;
+                els.btnRepeat.classList.toggle('text-slate-500');
+                els.btnRepeat.classList.toggle('text-islamic-400');
+                showToast(state.isRepeating ? "Repeat Verse: ON" : "Repeat Verse: OFF", "info");
+            });
+
+            els.reciterSelect.addEventListener('change', (e) => {
+                state.reciter = e.target.value;
+                fetchAyah(state.surah, state.ayah, state.isPlaying);
+                showToast("Reciter changed.", "success");
+            });
+
+            // Help Toggle
+            els.toggleHelp.addEventListener('click', () => {
+                els.helpContent.classList.toggle('hidden');
+                els.helpContent.classList.toggle('grid');
+                els.helpChevron.classList.toggle('rotate-180');
+            });
+
+
+            // --- SPEECH RECOGNITION (WEB SPEECH API) ---
+            let recognition = null;
+
+            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false; // Process only final results for stability
+                recognition.lang = 'en-US';
+
+                recognition.onstart = () => {
+                    state.isListening = true;
+                    els.micBtn.classList.add('is-listening');
+                    els.micIcon.classList.replace('text-slate-400', 'text-islamic-400');
+                    els.micIcon.classList.add('animate-pulse');
+                    els.transcriptDisplay.textContent = "Listening... Speak naturally.";
+                    els.transcriptDisplay.classList.add('text-islamic-400');
+                    showToast("Microphone active. You can speak now.", "info");
+                };
+
+                recognition.onend = () => {
+                    // Auto-restart if it was manually turned on, else stay off
+                    if (state.isListening) {
+                        try {
+                            recognition.start();
+                        } catch(e) {
+                            stopListening();
+                        }
+                    } else {
+                        stopListening();
+                    }
+                };
+
+                recognition.onerror = (event) => {
+                    if (event.error === 'not-allowed') {
+                        showToast("Microphone access denied. Please enable it in browser settings.", "error");
+                        stopListening();
+                    } else if(event.error !== 'no-speech') {
+                         console.log("Speech error: " + event.error);
+                    }
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+                    els.transcriptDisplay.textContent = `"${transcript}"`;
+                    els.transcriptDisplay.classList.remove('text-islamic-400');
+                    els.transcriptDisplay.classList.add('text-white');
+                    processVoiceCommand(transcript);
+                };
+
+            } else {
+                showToast("Your browser does not support Voice Recognition. Please use Chrome.", "error");
+                els.micBtn.disabled = true;
+                els.transcriptDisplay.textContent = "Voice control unavailable on this browser.";
+            }
+
+            function startListening() {
+                if (recognition && !state.isListening) {
+                    try {
+                        recognition.start();
+                    } catch(e) {
+                        console.error(e);
+                    }
+                }
+            }
+
+            function stopListening() {
+                if (recognition) {
+                    state.isListening = false;
+                    recognition.stop();
+                    els.micBtn.classList.remove('is-listening');
+                    els.micIcon.classList.replace('text-islamic-400', 'text-slate-400');
+                    els.micIcon.classList.remove('animate-pulse');
+                    els.transcriptDisplay.textContent = "Click mic to start listening...";
+                    els.transcriptDisplay.classList.replace('text-white', 'text-islamic-400');
+                }
+            }
+
+            els.micBtn.addEventListener('click', () => {
+                if (state.isListening) {
+                    stopListening();
+                } else {
+                    startListening();
+                }
+            });
+
+
+            // --- NLP / COMMAND PROCESSING ---
+            function processVoiceCommand(text) {
+                // 1. Clean string (remove punctuation)
+                text = text.replace(/[.,!?]/g, '').trim();
+
+                // 2. Control Commands
+                if (text.includes("pause")) { pauseAudio(); return; }
+                if (text.includes("resume") || text === "play") { playAudio(); return; }
+                if (text.includes("stop")) { pauseAudio(); els.audio.currentTime = 0; return; }
+                if (text.includes("next verse") || text.includes("next ayah")) { playNext(); return; }
+                if (text.includes("previous verse") || text.includes("previous ayah")) { playPrev(); return; }
+                if (text.includes("repeat verse")) { 
+                    state.isRepeating = true;
+                    els.btnRepeat.classList.remove('text-slate-500');
+                    els.btnRepeat.classList.add('text-islamic-400');
+                    showToast("Repeat Verse: ON", "info");
+                    return; 
+                }
+
+                // 3. Play Surah Command Matching
+                // Regex matches: "play surah [name]" OR "play surah [name] verse [number/word]"
+                const match = text.match(/play\s+surah\s+(.+?)(?:\s+(?:verse|ayah)\s+(\w+|\d+))?$/i);
+                
+                if (match) {
+                    let surahNameRaw = match[1].trim();
+                    let verseRaw = match[2];
+
+                    // Find closest surah number
+                    let targetSurahNum = null;
+                    
+                    // Exact match check
+                    if (surahMap[surahNameRaw]) {
+                        targetSurahNum = surahMap[surahNameRaw];
+                    } else {
+                        // Fuzzy check: remove 'al ', 'surah', extra spaces
+                        const cleanName = surahNameRaw.replace(/al\s+/g, '').replace(/surah\s+/g, '').trim();
+                        if (surahMap[cleanName]) {
+                            targetSurahNum = surahMap[cleanName];
+                        }
+                    }
+
+                    if (targetSurahNum) {
+                        let targetVerseNum = 1; // default to 1
+
+                        if (verseRaw) {
+                            if (!isNaN(parseInt(verseRaw))) {
+                                targetVerseNum = parseInt(verseRaw);
+                            } else if (wordToNumber[verseRaw]) {
+                                targetVerseNum = wordToNumber[verseRaw];
+                            }
+                        }
+
+                        showToast(`Command matched: Surah ${targetSurahNum}, Verse ${targetVerseNum}`, "success");
+                        fetchAyah(targetSurahNum, targetVerseNum, true);
+                    } else {
+                        showToast(`Could not recognize Surah name: "${surahNameRaw}"`, "error");
+                    }
+                } else {
+                    // Try a looser match if regex failed, just look for "surah" keyword
+                    if (text.includes("surah")) {
+                        const words = text.split(" ");
+                        const surahIndex = words.indexOf("surah");
+                        if(surahIndex !== -1 && words[surahIndex+1]) {
+                            const possibleSurah = words[surahIndex+1];
+                            if(surahMap[possibleSurah]) {
+                                fetchAyah(surahMap[possibleSurah], 1, true);
+                                showToast(`Matched loosely: Surah ${possibleSurah}`, "success");
+                                return;
+                            }
+                        }
+                    }
+                    showToast("Command not recognized. Check help guide.", "error");
+                }
+            }
+
+            // --- INITIALIZATION ---
+            // Fetch initial data (Al-Fatihah, Verse 1) but don't auto-play
+            fetchAyah(1, 1, false);
+
+        });
+    </script>
 </body>
 </html>
