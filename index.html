@@ -136,7 +136,7 @@
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-white tracking-wide">Voice Quran Player</h1>
-                    <p class="text-xs text-islamic-400">Hold mic to command</p>
+                    <p class="text-xs text-islamic-400">Deepgram AI · Hold mic to command</p>
                 </div>
             </div>
             
@@ -289,8 +289,7 @@
                 isPlaying: false,
                 isPressing: false,
                 isRepeating: false,
-                reciter: 'ar.alafasy',
-                finalTranscript: ''
+                reciter: 'ar.alafasy'
             };
 
             const allSurahs = [
@@ -652,108 +651,257 @@
                 fetchAyah(state.surah, state.ayah, state.isPlaying);
             });
 
-            // FIX #8: Simple inline style toggle avoids Tailwind hidden/grid class conflict
             els.toggleHelp.addEventListener('click', () => {
                 const isHidden = els.helpContent.style.display === 'none' || els.helpContent.style.display === '';
                 els.helpContent.style.display = isHidden ? 'grid' : 'none';
                 els.helpChevron.classList.toggle('rotate-180', isHidden);
             });
 
-            // --- PUSH-TO-SPEAK ---
-            let recognition = null;
-            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                // FIX: Use non-continuous mode — one clean result per hold, no restarts needed
-                recognition.continuous = false;
-                recognition.interimResults = true;
-                recognition.lang = 'en-US';
+            // ─── DEEPGRAM PUSH-TO-SPEAK ───────────────────────────────────────────────
+            // Architecture:
+            //   hold → getUserMedia → AudioContext → ScriptProcessorNode (PCM chunks)
+            //       → WebSocket to Deepgram streaming API → interim + final transcripts
+            //   release → close WebSocket → process last final transcript
 
-                recognition.onstart = () => {
-                    els.micIcon.className = 'ph ph-microphone text-4xl text-white transition-colors pointer-events-none';
-                    els.micStatus.textContent = "LISTENING...";
-                    els.micStatus.className = 'mt-4 text-sm text-islamic-400 font-medium tracking-wide';
-                    els.transcriptDisplay.textContent = "...";
-                    els.transcriptDisplay.classList.add('text-islamic-400', 'animate-pulse-fast');
-                    state.finalTranscript = '';
-                };
+            const DG_KEY_STORAGE = 'dg_api_key';
+            let dgApiKey = localStorage.getItem(DG_KEY_STORAGE) || '';
 
-                recognition.onresult = (event) => {
-                    let interimTranscript = '';
-                    state.finalTranscript = '';
-                    for (let i = 0; i < event.results.length; ++i) {
-                        if (event.results[i].isFinal) {
-                            state.finalTranscript += event.results[i][0].transcript;
-                        } else {
-                            interimTranscript += event.results[i][0].transcript;
-                        }
-                    }
-                    const displayTxt = (state.finalTranscript || interimTranscript).trim();
-                    if (displayTxt) els.transcriptDisplay.textContent = `"${displayTxt}"`;
-                };
+            // Show API key setup modal if no key saved
+            function showKeyModal(errorMsg = '') {
+                const existing = document.getElementById('dg-modal');
+                if (existing) existing.remove();
 
-                recognition.onerror = (e) => {
-                    if (e.error !== 'aborted') {
-                        els.transcriptDisplay.textContent = "Could not understand. Try again.";
-                        els.transcriptDisplay.classList.remove('text-islamic-400', 'animate-pulse-fast');
-                    }
-                };
+                const modal = document.createElement('div');
+                modal.id = 'dg-modal';
+                modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+                modal.style.background = 'rgba(0,0,0,0.7)';
+                modal.innerHTML = `
+                    <div class="glass rounded-3xl p-6 w-full max-w-md shadow-2xl border border-islamic-800">
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="w-10 h-10 rounded-full bg-islamic-900 border border-islamic-600 flex items-center justify-center">
+                                <i class="ph ph-key text-xl text-islamic-400"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-white font-bold text-lg">Deepgram API Key</h2>
+                                <p class="text-xs text-slate-400">Required for AI voice recognition</p>
+                            </div>
+                        </div>
+                        ${errorMsg ? `<p class="text-red-400 text-sm mb-3 bg-red-900/30 rounded-xl px-3 py-2"><i class="ph ph-warning mr-1"></i>${errorMsg}</p>` : ''}
+                        <p class="text-slate-400 text-sm mb-4">
+                            Get a free key at <a href="https://console.deepgram.com" target="_blank" class="text-islamic-400 underline">console.deepgram.com</a>. 
+                            Your key is stored only in your browser.
+                        </p>
+                        <input id="dg-key-input" type="password" placeholder="Paste your Deepgram API key..."
+                            class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-islamic-500 mb-4"
+                            value="${dgApiKey}" />
+                        <div class="flex gap-3">
+                            <button id="dg-key-save" class="flex-1 bg-islamic-600 hover:bg-islamic-500 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
+                                <i class="ph ph-check mr-1"></i>Save & Connect
+                            </button>
+                            ${dgApiKey ? `<button id="dg-key-cancel" class="px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm transition-colors">Cancel</button>` : ''}
+                        </div>
+                    </div>`;
+                document.body.appendChild(modal);
 
-                recognition.onend = () => {
-                    // If still holding, restart for another round (but reset transcript each time)
-                    if (state.isPressing) {
-                        state.finalTranscript = '';
-                        try { recognition.start(); } catch(e) {}
-                        return;
-                    }
-                    els.transcriptDisplay.classList.remove('animate-pulse-fast');
-                    els.transcriptDisplay.classList.remove('text-islamic-400');
-
-                    const textToProcess = state.finalTranscript.trim();
-                    if (textToProcess) {
-                        processVoiceCommand(textToProcess.toLowerCase());
-                    } else {
-                        els.transcriptDisplay.textContent = "Press and hold the mic to speak...";
-                    }
-                };
-            } else {
-                els.micStatus.textContent = "NOT SUPPORTED";
-                els.micBtn.disabled = true;
+                document.getElementById('dg-key-input').focus();
+                document.getElementById('dg-key-save').addEventListener('click', () => {
+                    const val = document.getElementById('dg-key-input').value.trim();
+                    if (!val) { showKeyModal('Please enter a valid API key.'); return; }
+                    dgApiKey = val;
+                    localStorage.setItem(DG_KEY_STORAGE, val);
+                    modal.remove();
+                    showToast('Deepgram connected!', 'success');
+                    updateKeyBtnUI();
+                });
+                const cancelBtn = document.getElementById('dg-key-cancel');
+                if (cancelBtn) cancelBtn.addEventListener('click', () => modal.remove());
             }
 
-            function setMicActive(active) {
-                if (active) {
-                    els.micBtn.classList.add('mic-btn-active');
-                    if (state.isPlaying) pauseAudio();
-                    try { recognition && recognition.start(); } catch(e) {}
+            // Key settings button in mic panel (injected after DOM ready)
+            const keyBtn = document.createElement('button');
+            keyBtn.id = 'dg-key-btn';
+            keyBtn.className = 'mt-2 text-xs text-slate-500 hover:text-islamic-400 transition-colors flex items-center gap-1';
+            keyBtn.innerHTML = `<i class="ph ph-gear"></i> <span id="dg-key-label">Set API Key</span>`;
+            keyBtn.addEventListener('click', () => showKeyModal());
+            els.micBtn.parentElement.appendChild(keyBtn);
+
+            function updateKeyBtnUI() {
+                const label = document.getElementById('dg-key-label');
+                if (dgApiKey) {
+                    label.textContent = 'API Key ✓';
+                    keyBtn.classList.add('text-islamic-600');
+                    keyBtn.classList.remove('text-slate-500');
                 } else {
-                    els.micBtn.classList.remove('mic-btn-active');
-                    // FIX #7: Set icon class directly
-                    els.micIcon.className = 'ph ph-microphone text-4xl text-slate-400 transition-colors pointer-events-none';
-                    els.micStatus.textContent = "HOLD TO SPEAK";
-                    els.micStatus.className = 'mt-4 text-sm text-islamic-500 font-medium tracking-wide';
-                    try { recognition && recognition.stop(); } catch(e) {}
+                    label.textContent = 'Set API Key';
+                    keyBtn.classList.remove('text-islamic-600');
+                    keyBtn.classList.add('text-slate-500');
+                }
+            }
+            updateKeyBtnUI();
+
+            // ── Deepgram streaming state ──
+            let dgSocket = null;
+            let dgStream = null;
+            let dgAudioCtx = null;
+            let dgProcessor = null;
+            let dgInterimText = '';
+            let dgFinalText = '';
+
+            async function startDeepgram() {
+                if (!dgApiKey) { showKeyModal('Please set your Deepgram API key first.'); return; }
+
+                state.isPressing = true;
+                dgFinalText = '';
+                dgInterimText = '';
+
+                els.micBtn.classList.add('mic-btn-active');
+                els.micIcon.className = 'ph ph-microphone text-4xl text-white transition-colors pointer-events-none';
+                els.micStatus.textContent = 'CONNECTING...';
+                els.micStatus.className = 'mt-4 text-sm text-yellow-400 font-medium tracking-wide';
+                els.transcriptDisplay.textContent = '...';
+                els.transcriptDisplay.classList.add('text-islamic-400', 'animate-pulse-fast');
+                if (state.isPlaying) pauseAudio();
+
+                // 1. Get microphone
+                try {
+                    dgStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                } catch (err) {
+                    showToast('Microphone access denied.', 'error');
+                    stopDeepgram(); return;
+                }
+
+                // 2. Open Deepgram WebSocket
+                // nova-3 model — best accuracy, handles Arabic names well
+                const url = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
+                    model: 'nova-3',
+                    language: 'en-US',
+                    encoding: 'linear16',
+                    sample_rate: '16000',
+                    channels: '1',
+                    interim_results: 'true',
+                    punctuate: 'false',
+                    smart_format: 'false',
+                });
+
+                dgSocket = new WebSocket(url, ['token', dgApiKey]);
+                dgSocket.binaryType = 'arraybuffer';
+
+                dgSocket.onopen = () => {
+                    els.micStatus.textContent = 'LISTENING...';
+                    els.micStatus.className = 'mt-4 text-sm text-islamic-400 font-medium tracking-wide';
+
+                    // 3. Pipe mic → PCM16 → WebSocket
+                    dgAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                    const source = dgAudioCtx.createMediaStreamSource(dgStream);
+                    // ScriptProcessor: 4096 samples, 1 input, 1 output channel
+                    dgProcessor = dgAudioCtx.createScriptProcessor(4096, 1, 1);
+                    dgProcessor.onaudioprocess = (e) => {
+                        if (dgSocket && dgSocket.readyState === WebSocket.OPEN) {
+                            const float32 = e.inputBuffer.getChannelData(0);
+                            // Convert Float32 → Int16 PCM
+                            const pcm16 = new Int16Array(float32.length);
+                            for (let i = 0; i < float32.length; i++) {
+                                const s = Math.max(-1, Math.min(1, float32[i]));
+                                pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+                            }
+                            dgSocket.send(pcm16.buffer);
+                        }
+                    };
+                    source.connect(dgProcessor);
+                    dgProcessor.connect(dgAudioCtx.destination);
+                };
+
+                dgSocket.onmessage = (evt) => {
+                    try {
+                        const msg = JSON.parse(evt.data);
+                        const alt = msg?.channel?.alternatives?.[0];
+                        if (!alt) return;
+                        const transcript = alt.transcript?.trim();
+                        if (!transcript) return;
+
+                        if (msg.is_final) {
+                            dgFinalText += (dgFinalText ? ' ' : '') + transcript;
+                            dgInterimText = '';
+                        } else {
+                            dgInterimText = transcript;
+                        }
+
+                        const display = (dgFinalText + (dgInterimText ? ' ' + dgInterimText : '')).trim();
+                        els.transcriptDisplay.textContent = `"${display}"`;
+                    } catch (_) {}
+                };
+
+                dgSocket.onerror = () => {
+                    showToast('Deepgram connection error. Check your API key.', 'error');
+                    showKeyModal('Connection failed — verify your API key.');
+                    stopDeepgram();
+                };
+
+                dgSocket.onclose = (e) => {
+                    // Code 1008 = invalid credentials
+                    if (e.code === 1008 || e.reason?.toLowerCase().includes('auth')) {
+                        showKeyModal('Invalid API key. Please re-enter.');
+                    }
+                };
+            }
+
+            function stopDeepgram() {
+                state.isPressing = false;
+
+                // Tear down audio pipeline
+                if (dgProcessor) { try { dgProcessor.disconnect(); } catch(_){} dgProcessor = null; }
+                if (dgAudioCtx)  { try { dgAudioCtx.close(); }        catch(_){} dgAudioCtx = null; }
+                if (dgStream)    { dgStream.getTracks().forEach(t => t.stop()); dgStream = null; }
+
+                // Close socket gracefully
+                if (dgSocket) {
+                    // Send empty keepalive to flush final results before closing
+                    if (dgSocket.readyState === WebSocket.OPEN) {
+                        dgSocket.send(JSON.stringify({ type: 'CloseStream' }));
+                        // Give 600ms for last final transcript to arrive
+                        setTimeout(() => { try { dgSocket.close(); } catch(_){} dgSocket = null; processAfterStop(); }, 600);
+                    } else {
+                        dgSocket = null;
+                        processAfterStop();
+                    }
+                } else {
+                    processAfterStop();
+                }
+
+                // UI reset
+                els.micBtn.classList.remove('mic-btn-active');
+                els.micIcon.className = 'ph ph-microphone text-4xl text-slate-400 transition-colors pointer-events-none';
+                els.micStatus.textContent = 'HOLD TO SPEAK';
+                els.micStatus.className = 'mt-4 text-sm text-islamic-500 font-medium tracking-wide';
+                els.transcriptDisplay.classList.remove('animate-pulse-fast', 'text-islamic-400');
+            }
+
+            function processAfterStop() {
+                // Use whatever final text we have (interim is discarded on release)
+                const text = dgFinalText.trim();
+                if (text) {
+                    processVoiceCommand(text.toLowerCase());
+                } else {
+                    els.transcriptDisplay.textContent = 'Press and hold the mic to speak...';
                 }
             }
 
-            function startMic(e) {
+            // Mouse & Touch events
+            function onPressStart(e) {
                 e.preventDefault();
-                if (!recognition || state.isPressing) return;
-                state.isPressing = true;
-                setMicActive(true);
+                if (state.isPressing) return;
+                startDeepgram();
+            }
+            function onPressEnd(e) {
+                if (!state.isPressing) return;
+                stopDeepgram();
             }
 
-            function stopMic(e) {
-                if (!recognition || !state.isPressing) return;
-                state.isPressing = false;
-                setMicActive(false);
-            }
-
-            els.micBtn.addEventListener('mousedown', startMic);
-            els.micBtn.addEventListener('touchstart', startMic, { passive: false });
-            window.addEventListener('mouseup', stopMic);
-            window.addEventListener('touchend', stopMic);
-            window.addEventListener('mouseleave', stopMic);
+            els.micBtn.addEventListener('mousedown', onPressStart);
+            els.micBtn.addEventListener('touchstart', onPressStart, { passive: false });
+            window.addEventListener('mouseup', onPressEnd);
+            window.addEventListener('touchend', onPressEnd);
+            window.addEventListener('mouseleave', onPressEnd);
 
             // --- COMMAND PARSER ---
             function processVoiceCommand(text) {
