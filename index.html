@@ -1,1002 +1,1834 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voice Quran Player | Push-To-Speak</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                        arabic: ['Amiri', 'serif'],
-                    },
-                    colors: {
-                        islamic: {
-                            50: '#f0fdf4',
-                            100: '#dcfce7',
-                            400: '#4ade80',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            800: '#166534',
-                            900: '#064e3b',
-                        }
-                    },
-                    animation: {
-                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    }
-                }
-            }
-        }
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>30-Day Calisthenics Challenge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
 
-    <style>
-        body {
-            background-color: #022c22;
-            color: #f8fafc;
-            overflow-x: hidden;
-            -webkit-user-select: none;
-            user-select: none;
-        }
+:root {
+  --bg: #0a0a0c;
+  --bg2: #111116;
+  --bg3: #18181f;
+  --card: #1c1c25;
+  --border: #2a2a38;
+  --accent: #e8ff47;
+  --accent2: #47ffe0;
+  --accent3: #ff6b47;
+  --text: #f0f0f8;
+  --text2: #8888aa;
+  --text3: #55556a;
+  --success: #47ffb0;
+  --warning: #ffd447;
+  --font-display: 'Bebas Neue', cursive;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius: 12px;
+  --radius-lg: 20px;
+}
 
-        .bg-pattern {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2316a34a' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-            z-index: -1;
-        }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .glass {
-            background: rgba(15, 23, 42, 0.5);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
-        }
+html { scroll-behavior: smooth; }
 
-        input[type=range] {
-            -webkit-appearance: none;
-            width: 100%;
-            background: transparent;
-        }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 14px; width: 14px;
-            border-radius: 50%;
-            background: #22c55e;
-            cursor: pointer;
-            margin-top: -5px;
-            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
-        }
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%; height: 4px;
-            cursor: pointer;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 2px;
-        }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-        .mic-btn-active {
-            background-color: rgba(22, 163, 74, 0.2) !important;
-            border-color: #22c55e !important;
-            transform: scale(0.95) !important;
-            box-shadow: 0 0 30px rgba(34, 197, 94, 0.4) !important;
-        }
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-        .mic-ripple {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            background-color: rgba(34, 197, 94, 0.4);
-            z-index: -1; opacity: 0; pointer-events: none;
-        }
-        .mic-btn-active .mic-ripple {
-            animation: ripple 1s linear infinite;
-        }
-        @keyframes ripple {
-            0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-            100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; }
-        }
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(10,10,12,0.92);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px; height: 60px;
+}
+.nav-logo { font-family: var(--font-display); font-size: 22px; letter-spacing: 2px; color: var(--accent); }
+.nav-links { display: flex; gap: 4px; }
+.nav-links button {
+  background: none; border: none; cursor: pointer;
+  color: var(--text2); font-family: var(--font-body); font-size: 13px; font-weight: 500;
+  padding: 6px 14px; border-radius: 8px;
+  transition: all 0.2s;
+}
+.nav-links button:hover { color: var(--text); background: var(--bg3); }
+.nav-links button.active { color: var(--accent); background: rgba(232,255,71,0.1); }
 
-        /* FIX #3: Proper fade animation — only animate-in class, not start state */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease forwards;
-        }
+/* ── LAYOUT ── */
+main { padding-top: 60px; }
+.page { display: none; padding: 32px 24px; max-width: 900px; margin: 0 auto; }
+.page.active { display: block; animation: fadeUp 0.4s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 
-        /* Mobile volume slider */
-        .vol-row { display: flex; align-items: center; gap: 8px; width: 100%; }
-    </style>
+/* ── TYPOGRAPHY ── */
+h1 { font-family: var(--font-display); font-size: clamp(42px,8vw,72px); letter-spacing: 3px; line-height: 1; }
+h2 { font-family: var(--font-display); font-size: clamp(26px,5vw,40px); letter-spacing: 2px; }
+h3 { font-family: var(--font-display); font-size: 22px; letter-spacing: 1px; }
+.label { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: var(--text3); }
+
+/* ── CARDS ── */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 24px;
+}
+.card-sm { padding: 16px; border-radius: var(--radius); }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 10px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.2s; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: #0a0a0c; }
+.btn-primary:hover { background: #f5ff80; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(232,255,71,0.3); }
+.btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+.btn-danger { background: var(--accent3); color: white; }
+.btn-danger:hover { background: #ff8866; }
+.btn-sm { padding: 8px 16px; font-size: 13px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── DASHBOARD ── */
+.hero-section { margin-bottom: 32px; }
+.hero-section .day-label { display: inline-block; background: rgba(232,255,71,0.12); color: var(--accent); padding: 4px 14px; border-radius: 20px; font-family: var(--font-mono); font-size: 12px; letter-spacing: 2px; margin-bottom: 12px; }
+.hero-section h1 span { color: var(--accent); }
+.hero-section p { color: var(--text2); max-width: 520px; margin-top: 10px; font-size: 16px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; text-align: center; position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--accent); opacity: 0; transition: opacity 0.2s; }
+.stat-card:hover::before { opacity: 1; }
+.stat-value { font-family: var(--font-display); font-size: 44px; color: var(--accent); line-height: 1; }
+.stat-value.accent2 { color: var(--accent2); }
+.stat-value.accent3 { color: var(--accent3); }
+.stat-value.success { color: var(--success); }
+.stat-label { color: var(--text2); font-size: 12px; margin-top: 4px; font-weight: 500; }
+
+.progress-bar-wrap { background: var(--bg3); border-radius: 99px; height: 8px; overflow: hidden; margin-top: 8px; }
+.progress-bar { height: 100%; background: linear-gradient(90deg,var(--accent),var(--accent2)); border-radius: 99px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+
+/* ── TODAY'S WORKOUT CARD ── */
+.today-card {
+  background: linear-gradient(135deg, var(--card) 0%, #1e1e2e 100%);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden;
+}
+.today-card::after {
+  content: ''; position: absolute; top: -60px; right: -60px;
+  width: 200px; height: 200px;
+  background: radial-gradient(circle, rgba(232,255,71,0.07) 0%, transparent 70%);
+  pointer-events: none;
+}
+.today-card .workout-meta { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+.today-card .meta-chip {
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; color: var(--text2); display: flex; align-items: center; gap: 6px;
+}
+.today-card .meta-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.exercise-preview-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.exercise-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px;
+  transition: border-color 0.2s;
+}
+.exercise-row:hover { border-color: var(--accent); }
+.exercise-row .ex-name { font-weight: 600; }
+.exercise-row .ex-detail { color: var(--text2); font-size: 13px; }
+.exercise-row .ex-badge {
+  background: rgba(232,255,71,0.1); color: var(--accent);
+  font-family: var(--font-mono); font-size: 12px; padding: 3px 10px; border-radius: 20px;
+}
+.exercise-row .ex-badge.rest { background: rgba(71,255,224,0.1); color: var(--accent2); }
+.exercise-row.completed-ex { opacity: 0.5; }
+.exercise-row.completed-ex .ex-name { text-decoration: line-through; }
+
+/* ── CALENDAR ── */
+.calendar-grid {
+  display: grid; grid-template-columns: repeat(7,1fr); gap: 6px; margin: 20px 0;
+}
+.cal-header { text-align: center; font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; color: var(--text3); padding: 8px 0; }
+.cal-day {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
+  border: 1px solid transparent; transition: all 0.2s; position: relative; flex-direction: column; gap: 1px;
+}
+.cal-day.empty { cursor: default; }
+.cal-day.future { background: var(--bg3); color: var(--text3); }
+.cal-day.current {
+  background: rgba(232,255,71,0.12); border-color: var(--accent);
+  color: var(--accent); box-shadow: 0 0 20px rgba(232,255,71,0.15);
+}
+.cal-day.completed { background: rgba(71,255,176,0.1); border-color: rgba(71,255,176,0.3); color: var(--success); }
+.cal-day.completed::after { content: '✓'; font-size: 10px; color: var(--success); }
+.cal-day.missed { background: rgba(255,107,71,0.08); color: var(--accent3); }
+.cal-day.rest-day { background: rgba(71,255,224,0.06); color: var(--accent2); }
+.cal-day:not(.empty):not(.future):hover { transform: scale(1.08); z-index: 2; }
+.cal-day .day-num { font-size: 14px; font-weight: 700; }
+.cal-day .day-icon { font-size: 9px; }
+
+/* ── WORKOUT VIEW ── */
+.phase-section { margin-bottom: 24px; }
+.phase-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+}
+.phase-badge {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 8px; padding: 4px 12px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.phase-badge.warmup { border-color: var(--warning); color: var(--warning); }
+.phase-badge.main { border-color: var(--accent); color: var(--accent); }
+.phase-badge.cooldown { border-color: var(--accent2); color: var(--accent2); }
+
+/* ── TIMER ── */
+.timer-section {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 28px; text-align: center; margin: 24px 0;
+}
+.timer-display {
+  font-family: var(--font-display); font-size: clamp(72px,15vw,120px);
+  color: var(--accent); letter-spacing: 4px; line-height: 1;
+  transition: color 0.3s;
+}
+.timer-display.resting { color: var(--accent2); }
+.timer-display.warning { color: var(--accent3); }
+.timer-label { color: var(--text2); font-size: 14px; margin-bottom: 8px; font-family: var(--font-mono); letter-spacing: 2px; }
+.timer-name { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
+.timer-controls { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.timer-ring {
+  width: 180px; height: 180px; margin: 0 auto 20px;
+  position: relative;
+}
+.timer-ring svg { transform: rotate(-90deg); }
+.timer-ring circle { fill: none; stroke-width: 8; }
+.timer-ring .bg { stroke: var(--border); }
+.timer-ring .fg { stroke: var(--accent); stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-ring .fg.resting { stroke: var(--accent2); }
+.timer-ring .fg.warning { stroke: var(--accent3); }
+.timer-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  text-align: center;
+}
+.timer-center .big { font-family: var(--font-display); font-size: 46px; color: var(--accent); line-height: 1; }
+.timer-center .big.resting { color: var(--accent2); }
+.timer-center .big.warning { color: var(--accent3); }
+.timer-center .small { font-size: 11px; color: var(--text3); font-family: var(--font-mono); letter-spacing: 1px; }
+
+/* ── SVG DEMOS ── */
+.demo-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 16px; margin: 20px 0; }
+.demo-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px; text-align: center;
+  cursor: pointer; transition: all 0.2s; overflow: hidden; position: relative;
+}
+.demo-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.4); }
+.demo-card .demo-title { font-weight: 700; margin-top: 12px; }
+.demo-card .demo-muscle { font-size: 12px; color: var(--text2); margin-top: 4px; }
+.demo-card svg { width: 120px; height: 100px; }
+.demo-card .demo-tag {
+  display: inline-block; background: rgba(232,255,71,0.1); color: var(--accent);
+  font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-top: 8px; font-family: var(--font-mono);
+}
+
+/* ── EXERCISE LIBRARY ── */
+.lib-search {
+  width: 100%; background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px; color: var(--text);
+  font-family: var(--font-body); font-size: 14px; outline: none;
+  transition: border-color 0.2s; margin-bottom: 16px;
+}
+.lib-search:focus { border-color: var(--accent); }
+.lib-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); gap: 14px; }
+.lib-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px; cursor: pointer;
+  transition: all 0.2s;
+}
+.lib-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.lib-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+.lib-card h4 { font-size: 16px; font-weight: 700; }
+.lib-diff {
+  font-size: 11px; padding: 3px 8px; border-radius: 6px; font-family: var(--font-mono);
+}
+.diff-easy { background: rgba(71,255,176,0.1); color: var(--success); }
+.diff-medium { background: rgba(255,212,71,0.1); color: var(--warning); }
+.diff-hard { background: rgba(255,107,71,0.1); color: var(--accent3); }
+.lib-muscles { font-size: 12px; color: var(--accent2); margin-bottom: 8px; }
+.lib-desc { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.lib-steps { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: none; }
+.lib-steps.open { display: block; }
+.lib-steps ol { padding-left: 18px; }
+.lib-steps li { font-size: 13px; color: var(--text2); margin-bottom: 6px; }
+
+/* ── STATS PAGE ── */
+.stats-sections { display: grid; gap: 20px; }
+.week-bar { display: flex; gap: 6px; align-items: flex-end; height: 80px; margin: 16px 0; }
+.week-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.week-col-bar {
+  width: 100%; border-radius: 6px 6px 0 0;
+  background: var(--accent); min-height: 4px;
+  transition: height 0.6s ease; position: relative;
+}
+.week-col-bar.empty { background: var(--bg3); }
+.week-col-label { font-size: 11px; color: var(--text3); font-family: var(--font-mono); }
+.streak-flame { font-size: 48px; animation: pulse 1.5s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+/* ── ACHIEVEMENT ── */
+.achievements-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(160px,1fr)); gap: 12px; margin: 16px 0; }
+.achievement {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; text-align: center;
+  transition: all 0.2s;
+}
+.achievement.unlocked { border-color: rgba(232,255,71,0.4); background: rgba(232,255,71,0.05); }
+.achievement .ach-icon { font-size: 32px; margin-bottom: 8px; filter: grayscale(1); opacity: 0.4; }
+.achievement.unlocked .ach-icon { filter: none; opacity: 1; }
+.achievement .ach-name { font-size: 13px; font-weight: 600; }
+.achievement .ach-desc { font-size: 11px; color: var(--text2); margin-top: 4px; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  max-width: 540px; width: 100%; max-height: 80vh; overflow-y: auto;
+  transform: translateY(20px) scale(0.97); transition: transform 0.3s;
+}
+.modal-overlay.open .modal { transform: none; }
+.modal-header {
+  padding: 24px 24px 16px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.modal-body { padding: 20px 24px 24px; }
+.modal-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 24px; line-height: 1; }
+.modal-close:hover { color: var(--text); }
+
+/* ── CONFETTI ── */
+.confetti-piece {
+  position: fixed; pointer-events: none; z-index: 300;
+  width: 8px; height: 12px; border-radius: 2px;
+  animation: confettiFall 2.5s ease-out forwards;
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 400;
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 14px 20px; font-size: 14px; font-weight: 500;
+  transform: translateY(20px); opacity: 0;
+  transition: all 0.3s; pointer-events: none; max-width: 300px;
+}
+.toast.show { transform: none; opacity: 1; }
+.toast.success { border-color: var(--success); color: var(--success); }
+.toast.info { border-color: var(--accent); color: var(--accent); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+  .page { padding: 20px 16px; }
+  nav { padding: 0 16px; }
+  .nav-links button { padding: 6px 10px; font-size: 12px; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+  .demo-grid { grid-template-columns: repeat(2,1fr); }
+  .cal-day { font-size: 12px; }
+}
+
+/* ── MISC ── */
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+.text-accent { color: var(--accent); }
+.text-muted { color: var(--text2); }
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-8 { gap: 8px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text2);
+}
+</style>
 </head>
-<body class="min-h-screen flex flex-col font-sans antialiased relative">
+<body>
 
-    <div class="bg-pattern"></div>
-    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+<nav>
+  <div class="nav-logo">CALI30</div>
+  <div class="nav-links">
+    <button class="active" onclick="showPage('dashboard')">Dashboard</button>
+    <button onclick="showPage('workout')">Workout</button>
+    <button onclick="showPage('calendar')">Calendar</button>
+    <button onclick="showPage('exercises')">Exercises</button>
+    <button onclick="showPage('stats')">Stats</button>
+  </div>
+</nav>
 
-    <div class="container mx-auto px-4 py-6 max-w-4xl flex-1 flex flex-col">
-        
-        <!-- Header -->
-        <header class="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 glass p-4 rounded-2xl">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-islamic-500 to-islamic-800 flex items-center justify-center shadow-lg">
-                    <i class="ph ph-book-open-text text-2xl text-white"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-bold text-white tracking-wide">Voice Quran Player</h1>
-                    <p class="text-xs text-islamic-400">Deepgram AI · Hold mic to command</p>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <i class="ph ph-user-sound text-islamic-400 text-xl hidden sm:block"></i>
-                <select id="reciter-select" class="bg-slate-800/80 border border-slate-700 text-sm rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-islamic-500 w-full sm:w-auto outline-none">
-                    <option value="ar.alafasy">Mishary Rashid Alafasy</option>
-                    <option value="ar.abdulbasitmurattal">Abdul Basit Abdus Samad</option>
-                    <option value="ar.abdurrahmaansudais">Abdurrahmaan As-Sudais</option>
-                    <option value="ar.hudhaify">Ali Al-Huthaify</option>
-                </select>
-            </div>
-        </header>
+<main>
 
-        <!-- Main Display -->
-        <main class="flex-1 flex flex-col gap-6">
-            
-            <!-- Ayah Display -->
-            <div class="glass rounded-3xl p-6 md:p-10 flex-1 flex flex-col justify-center relative overflow-hidden transition-all duration-500 min-h-[250px]" id="quran-display">
-                
-                <div id="loading-overlay" class="absolute inset-0 bg-slate-900/90 backdrop-blur-md flex flex-col items-center justify-center z-10 hidden">
-                    <i class="ph ph-spinner animate-spin text-4xl text-islamic-500 mb-3"></i>
-                    <p class="text-sm text-islamic-400 tracking-wider font-medium">Fetching Ayah...</p>
-                </div>
+<!-- ── DASHBOARD PAGE ── -->
+<div id="page-dashboard" class="page active">
+  <div class="hero-section">
+    <div class="day-label" id="hero-day-label">DAY 1 OF 30</div>
+    <h1>YOUR <span>30-DAY</span><br>CHALLENGE</h1>
+    <p>Build strength, endurance, and consistency — no equipment needed. Just your body and your will.</p>
+  </div>
 
-                <!-- FIX #3: Removed conflicting fade-enter/fade-enter-active classes; use JS-driven fade-in-up -->
-                <div id="ayah-content" class="flex flex-col h-full justify-center">
-                    <div class="text-center mb-6">
-                        <span id="surah-badge" class="inline-block px-4 py-1.5 rounded-full bg-islamic-900/80 border border-islamic-600 text-islamic-400 text-sm font-medium tracking-widest uppercase shadow-sm">
-                            Surah Al-Fatihah
-                        </span>
-                    </div>
-                    
-                    <div class="text-center mb-8">
-                        <p id="arabic-text" class="font-arabic text-3xl md:text-5xl lg:text-6xl leading-[1.8] md:leading-[2] text-white mb-6" dir="rtl">
-                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                        </p>
-                        <p id="english-text" class="text-slate-300 text-base md:text-xl leading-relaxed font-light">
-                            In the name of Allah, the Entirely Merciful, the Especially Merciful.
-                        </p>
-                    </div>
-
-                    <div class="mt-auto text-center">
-                        <p id="ayah-number" class="text-slate-500 text-sm font-medium">Verse 1 of 7</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Live Speech Transcript -->
-            <div class="glass rounded-2xl p-4 flex flex-col items-center justify-center min-h-[80px] border border-islamic-900/50 relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-r from-transparent via-islamic-900/10 to-transparent pointer-events-none"></div>
-                <div id="transcript-container" class="text-center z-10 w-full">
-                    <p class="text-xs text-slate-500 uppercase tracking-widest mb-1 font-semibold">Live Transcript</p>
-                    <p id="transcript-display" class="text-lg md:text-xl text-slate-300 font-medium transition-colors">Press and hold the mic to speak...</p>
-                </div>
-            </div>
-
-            <!-- Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <!-- Push to Speak Mic -->
-                <div class="glass rounded-3xl p-6 flex flex-col items-center justify-center relative overflow-hidden">
-                    <button id="mic-btn" class="relative w-24 h-24 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center shadow-2xl transition-all duration-200 z-10 touch-none">
-                        <div class="mic-ripple"></div>
-                        <i id="mic-icon" class="ph ph-microphone text-4xl text-slate-400 transition-colors pointer-events-none"></i>
-                    </button>
-                    <p id="mic-status" class="mt-4 text-sm text-islamic-500 font-medium tracking-wide">HOLD TO SPEAK</p>
-                </div>
-
-                <!-- Media Player -->
-                <div class="glass rounded-3xl p-6 md:col-span-2 flex flex-col justify-center">
-                    <audio id="quran-audio" preload="auto"></audio>
-                    
-                    <div class="mb-6">
-                        <input type="range" id="seek-bar" value="0" min="0" max="100" step="0.1">
-                        <div class="flex justify-between text-xs text-slate-400 mt-2 font-medium">
-                            <span id="time-current">0:00</span>
-                            <span id="time-total">0:00</span>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <!-- FIX #6: Volume visible on all screen sizes -->
-                        <div class="vol-row w-28">
-                            <i id="vol-icon" class="ph ph-speaker-high text-slate-400 text-lg flex-shrink-0"></i>
-                            <input type="range" id="vol-bar" value="100" min="0" max="100">
-                        </div>
-
-                        <div class="flex items-center gap-5 justify-center flex-1">
-                            <button id="btn-prev" class="text-slate-400 hover:text-white transition-colors">
-                                <i class="ph ph-skip-back-circle text-4xl md:text-3xl"></i>
-                            </button>
-                            
-                            <button id="btn-play" class="w-16 h-16 rounded-full bg-islamic-600 flex items-center justify-center text-white hover:bg-islamic-500 shadow-[0_0_20px_rgba(22,163,74,0.3)] transition-transform transform hover:scale-105">
-                                <i id="play-icon" class="ph ph-play-circle text-4xl"></i>
-                            </button>
-                            
-                            <button id="btn-next" class="text-slate-400 hover:text-white transition-colors">
-                                <i class="ph ph-skip-forward-circle text-4xl md:text-3xl"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="w-24 flex justify-end">
-                            <button id="btn-repeat" class="text-slate-500 hover:text-islamic-400 transition-colors">
-                                <i class="ph ph-repeat text-2xl"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Help Guide -->
-            <div class="glass rounded-2xl p-5 mt-2">
-                <div class="flex items-center gap-2 mb-3 cursor-pointer select-none" id="toggle-help">
-                    <i class="ph ph-lightbulb text-islamic-400 text-lg"></i>
-                    <h3 class="text-sm font-medium text-slate-200">Tips & Commands</h3>
-                    <i id="help-chevron" class="ph ph-caret-down ml-auto text-slate-400 transition-transform"></i>
-                </div>
-                <!-- FIX #8: Use inline style for toggle instead of conflicting Tailwind hidden+grid -->
-                <div id="help-content" style="display:none;" class="grid grid-cols-1 sm:grid-cols-2 text-sm text-slate-400 gap-y-3 gap-x-6">
-                    <div>
-                        <strong class="text-islamic-400 block mb-1">Play any Surah:</strong>
-                        <ul class="list-disc pl-4 space-y-1 text-xs">
-                            <li>"Play Surah Yaseen"</li>
-                            <li>"Mulk verse 5"</li>
-                            <li>"Baqarah" (Starts from beginning)</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong class="text-islamic-400 block mb-1">Player Controls:</strong>
-                        <ul class="list-disc pl-4 space-y-1 text-xs">
-                            <li>"Next verse" / "Previous verse"</li>
-                            <li>"Pause recitation" / "Resume"</li>
-                            <li>"Repeat verse" / "Stop"</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-        </main>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value accent3" id="stat-current-day">1</div>
+      <div class="stat-label">Current Day</div>
     </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            const state = {
-                surah: 1,
-                ayah: 1,
-                totalAyahsInCurrentSurah: 7,
-                isPlaying: false,
-                isPressing: false,
-                isRepeating: false,
-                reciter: 'ar.alafasy'
-            };
-
-            const allSurahs = [
-                { id: 1,   name: "fatiha",       aliases: ["alfatiha", "fatiha", "fateha"] },
-                { id: 2,   name: "baqarah",       aliases: ["baqarah", "bakara", "baqara", "bakrah"] },
-                { id: 3,   name: "ali imran",     aliases: ["imran", "ali imran", "al imran"] },
-                { id: 4,   name: "nisa",          aliases: ["nisa", "an nisa"] },
-                { id: 5,   name: "maidah",        aliases: ["maidah", "maida", "al maidah"] },
-                { id: 6,   name: "anam",          aliases: ["anam", "al anam"] },
-                { id: 7,   name: "araf",          aliases: ["araf", "al araf"] },
-                { id: 8,   name: "anfal",         aliases: ["anfal", "al anfal"] },
-                { id: 9,   name: "tawbah",        aliases: ["tawbah", "at tawbah", "toba"] },
-                { id: 10,  name: "yunus",         aliases: ["yunus", "younus"] },
-                { id: 11,  name: "hud",           aliases: ["hud", "hood"] },
-                { id: 12,  name: "yusuf",         aliases: ["yusuf", "yousef"] },
-                { id: 13,  name: "raad",          aliases: ["rad", "raad", "ar raad"] },
-                { id: 14,  name: "ibrahim",       aliases: ["ibrahim", "ebrahim"] },
-                { id: 15,  name: "hijr",          aliases: ["hijr", "al hijr"] },
-                { id: 16,  name: "nahl",          aliases: ["nahl", "an nahl"] },
-                { id: 17,  name: "isra",          aliases: ["isra", "al isra", "bani israil"] },
-                { id: 18,  name: "kahf",          aliases: ["kahf", "al kahf", "kaf"] },
-                { id: 19,  name: "maryam",        aliases: ["maryam", "mariam"] },
-                { id: 20,  name: "taha",          aliases: ["taha", "ta ha"] },
-                { id: 21,  name: "anbiya",        aliases: ["anbiya", "al anbiya"] },
-                { id: 22,  name: "hajj",          aliases: ["hajj", "al hajj"] },
-                { id: 23,  name: "muminun",       aliases: ["muminun", "muminoon"] },
-                { id: 24,  name: "nur",           aliases: ["nur", "noor", "an noor"] },
-                { id: 25,  name: "furqan",        aliases: ["furqan", "al furqan"] },
-                { id: 26,  name: "shuara",        aliases: ["shuara", "ash shuara"] },
-                { id: 27,  name: "naml",          aliases: ["naml", "an naml"] },
-                { id: 28,  name: "qasas",         aliases: ["qasas", "al qasas"] },
-                { id: 29,  name: "ankabut",       aliases: ["ankabut", "ankaboot"] },
-                { id: 30,  name: "rum",           aliases: ["rum", "room", "ar rum"] },
-                { id: 31,  name: "luqman",        aliases: ["luqman", "lukman"] },
-                { id: 32,  name: "sajdah",        aliases: ["sajdah", "as sajdah"] },
-                { id: 33,  name: "ahzab",         aliases: ["ahzab", "al ahzab"] },
-                { id: 34,  name: "saba",          aliases: ["saba", "sheba"] },
-                { id: 35,  name: "fatir",         aliases: ["fatir", "faatir"] },
-                { id: 36,  name: "yaseen",        aliases: ["yaseen", "yasin"] },
-                { id: 37,  name: "saffat",        aliases: ["saffat", "as saffat"] },
-                { id: 38,  name: "sad",           aliases: ["sad", "saad"] },
-                { id: 39,  name: "zumar",         aliases: ["zumar", "az zumar"] },
-                { id: 40,  name: "ghafir",        aliases: ["ghafir", "mumin"] },
-                { id: 41,  name: "fussilat",      aliases: ["fussilat", "ha mim sajdah"] },
-                { id: 42,  name: "shura",         aliases: ["shura", "ash shura"] },
-                { id: 43,  name: "zukhruf",       aliases: ["zukhruf", "az zukhruf"] },
-                { id: 44,  name: "dukhan",        aliases: ["dukhan", "ad dukhan"] },
-                { id: 45,  name: "jathiyah",      aliases: ["jathiyah", "al jathiyah"] },
-                { id: 46,  name: "ahqaf",         aliases: ["ahqaf", "al ahqaf"] },
-                { id: 47,  name: "muhammad",      aliases: ["muhammad", "mohammad"] },
-                { id: 48,  name: "fath",          aliases: ["fath", "al fath"] },
-                { id: 49,  name: "hujurat",       aliases: ["hujurat", "al hujurat"] },
-                { id: 50,  name: "qaf",           aliases: ["qaf", "qaaf"] },
-                { id: 51,  name: "dhariyat",      aliases: ["dhariyat", "adh dhariyat"] },
-                { id: 52,  name: "tur",           aliases: ["tur", "at tur", "toor"] },
-                { id: 53,  name: "najm",          aliases: ["najm", "an najm"] },
-                { id: 54,  name: "qamar",         aliases: ["qamar", "al qamar"] },
-                { id: 55,  name: "rahman",        aliases: ["rahman", "ar rahman", "rehman"] },
-                { id: 56,  name: "waqiah",        aliases: ["waqiah", "al waqiah", "wakia"] },
-                { id: 57,  name: "hadid",         aliases: ["hadid", "al hadid"] },
-                { id: 58,  name: "mujadila",      aliases: ["mujadila", "al mujadilah"] },
-                { id: 59,  name: "hashr",         aliases: ["hashr", "al hashr"] },
-                { id: 60,  name: "mumtahanah",    aliases: ["mumtahanah", "al mumtahanah"] },
-                { id: 61,  name: "saff",          aliases: ["saff", "as saff"] },
-                { id: 62,  name: "jumuah",        aliases: ["jumuah", "jummah"] },
-                { id: 63,  name: "munafiqun",     aliases: ["munafiqun", "munafiqoon"] },
-                { id: 64,  name: "taghabun",      aliases: ["taghabun", "at taghabun"] },
-                { id: 65,  name: "talaq",         aliases: ["talaq", "at talaq"] },
-                { id: 66,  name: "tahrim",        aliases: ["tahrim", "at tahrim"] },
-                { id: 67,  name: "mulk",          aliases: ["mulk", "al mulk"] },
-                { id: 68,  name: "qalam",         aliases: ["qalam", "al qalam"] },
-                { id: 69,  name: "haqqah",        aliases: ["haqqah", "al haqqah"] },
-                { id: 70,  name: "maarij",        aliases: ["maarij", "al maarij"] },
-                { id: 71,  name: "nuh",           aliases: ["nuh", "nooh"] },
-                { id: 72,  name: "jinn",          aliases: ["jinn", "al jinn"] },
-                { id: 73,  name: "muzzammil",     aliases: ["muzzammil", "al muzzammil"] },
-                { id: 74,  name: "muddaththir",   aliases: ["muddaththir", "al muddaththir"] },
-                { id: 75,  name: "qiyamah",       aliases: ["qiyamah", "al qiyamah"] },
-                { id: 76,  name: "insan",         aliases: ["insan", "al insan", "dahr"] },
-                { id: 77,  name: "mursalat",      aliases: ["mursalat", "al mursalat"] },
-                { id: 78,  name: "naba",          aliases: ["naba", "an naba", "amma"] },
-                { id: 79,  name: "naziat",        aliases: ["naziat", "an naziat"] },
-                { id: 80,  name: "abasa",         aliases: ["abasa"] },
-                { id: 81,  name: "takwir",        aliases: ["takwir", "at takweer"] },
-                { id: 82,  name: "infitar",       aliases: ["infitar", "al infitar"] },
-                { id: 83,  name: "mutaffifin",    aliases: ["mutaffifin", "al mutaffifeen"] },
-                { id: 84,  name: "inshiqaq",      aliases: ["inshiqaq", "al inshiqaq"] },
-                { id: 85,  name: "buruj",         aliases: ["buruj", "burooj", "al burooj"] },
-                { id: 86,  name: "tariq",         aliases: ["tariq", "at tariq"] },
-                { id: 87,  name: "ala",           aliases: ["ala", "al ala"] },
-                { id: 88,  name: "ghashiyah",     aliases: ["ghashiyah", "al ghashiyah"] },
-                { id: 89,  name: "fajr",          aliases: ["fajr", "al fajr"] },
-                { id: 90,  name: "balad",         aliases: ["balad", "al balad"] },
-                { id: 91,  name: "shams",         aliases: ["shams", "ash shams"] },
-                { id: 92,  name: "layl",          aliases: ["layl", "lail", "al lail"] },
-                { id: 93,  name: "duha",          aliases: ["duha", "ad duha", "dhuha"] },
-                { id: 94,  name: "sharh",         aliases: ["sharh", "ash sharh", "inshirah"] },
-                { id: 95,  name: "tin",           aliases: ["tin", "at tin", "teen"] },
-                { id: 96,  name: "alaq",          aliases: ["alaq", "al alaq", "iqra"] },
-                { id: 97,  name: "qadr",          aliases: ["qadr", "al qadr"] },
-                { id: 98,  name: "bayyinah",      aliases: ["bayyinah", "al bayyinah"] },
-                { id: 99,  name: "zalzalah",      aliases: ["zalzalah", "az zalzalah", "zilzal"] },
-                { id: 100, name: "adiyat",        aliases: ["adiyat", "al adiyat"] },
-                { id: 101, name: "qariah",        aliases: ["qariah", "al qariah"] },
-                { id: 102, name: "takathur",      aliases: ["takathur", "at takathur"] },
-                { id: 103, name: "asr",           aliases: ["asr", "al asr"] },
-                { id: 104, name: "humazah",       aliases: ["humazah", "al humazah"] },
-                { id: 105, name: "fil",           aliases: ["fil", "feel", "al feel"] },
-                { id: 106, name: "quraysh",       aliases: ["quraysh", "quraish"] },
-                { id: 107, name: "maun",          aliases: ["maun", "maoon", "al maoon"] },
-                { id: 108, name: "kawthar",       aliases: ["kawthar", "al kawthar", "kauthar"] },
-                { id: 109, name: "kafirun",       aliases: ["kafirun", "al kafiroon", "kafiroon"] },
-                { id: 110, name: "nasr",          aliases: ["nasr", "an nasr"] },
-                { id: 111, name: "masad",         aliases: ["masad", "al masad", "lahab"] },
-                { id: 112, name: "ikhlas",        aliases: ["ikhlas", "al ikhlas"] },
-                { id: 113, name: "falaq",         aliases: ["falaq", "al falaq"] },
-                { id: 114, name: "nas",           aliases: ["nas", "an nas", "naas"] }
-            ];
-
-            // Full spoken-number parser: handles "fifty five", "one hundred", "verse twenty two", etc.
-            const _ones = {zero:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,
-                ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,
-                seventeen:17,eighteen:18,nineteen:19};
-            const _tens = {twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
-
-            function wordsToInt(str) {
-                str = str.trim().toLowerCase().replace(/,/g, '');
-                if (/^\d+$/.test(str)) return parseInt(str);
-                const words = str.split(/[\s-]+/);
-                let total = 0, current = 0;
-                for (const w of words) {
-                    if (_ones[w] !== undefined)      current += _ones[w];
-                    else if (_tens[w] !== undefined) current += _tens[w];
-                    else if (w === 'hundred')       { current = current ? current * 100 : 100; }
-                    else if (w === 'thousand')      { total += (current || 1) * 1000; current = 0; }
-                    // ignore "and", "verse", unknown words
-                }
-                total += current;
-                return total > 0 ? total : null;
-            }
-
-            const els = {
-                audio: document.getElementById('quran-audio'),
-                micBtn: document.getElementById('mic-btn'),
-                micIcon: document.getElementById('mic-icon'),
-                micStatus: document.getElementById('mic-status'),
-                transcriptDisplay: document.getElementById('transcript-display'),
-                btnPlay: document.getElementById('btn-play'),
-                playIcon: document.getElementById('play-icon'),
-                btnNext: document.getElementById('btn-next'),
-                btnPrev: document.getElementById('btn-prev'),
-                btnRepeat: document.getElementById('btn-repeat'),
-                seekBar: document.getElementById('seek-bar'),
-                timeCurrent: document.getElementById('time-current'),
-                timeTotal: document.getElementById('time-total'),
-                volBar: document.getElementById('vol-bar'),
-                volIcon: document.getElementById('vol-icon'),
-                reciterSelect: document.getElementById('reciter-select'),
-                loadingOverlay: document.getElementById('loading-overlay'),
-                ayahContent: document.getElementById('ayah-content'),
-                surahBadge: document.getElementById('surah-badge'),
-                arabicText: document.getElementById('arabic-text'),
-                englishText: document.getElementById('english-text'),
-                ayahNumber: document.getElementById('ayah-number'),
-                toggleHelp: document.getElementById('toggle-help'),
-                helpContent: document.getElementById('help-content'),
-                helpChevron: document.getElementById('help-chevron')
-            };
-
-            // --- UTILITIES ---
-            function showToast(message, type = 'info') {
-                const container = document.getElementById('toast-container');
-                const toast = document.createElement('div');
-                const colors = {
-                    info: 'bg-slate-800 border-slate-700 text-white',
-                    success: 'bg-islamic-900 border-islamic-600 text-islamic-100',
-                    error: 'bg-red-900 border-red-700 text-red-100'
-                };
-                toast.className = `px-4 py-3 rounded-xl border shadow-xl text-sm transition-all duration-300 transform translate-x-full opacity-0 flex items-center gap-2 ${colors[type]}`;
-                const iconMap = { info: 'ph-info', success: 'ph-check-circle', error: 'ph-warning-circle' };
-                toast.innerHTML = `<i class="ph ${iconMap[type]} text-xl"></i> <span>${message}</span>`;
-                container.appendChild(toast);
-                setTimeout(() => toast.classList.remove('translate-x-full', 'opacity-0'), 10);
-                setTimeout(() => {
-                    toast.classList.add('translate-x-full', 'opacity-0');
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
-            }
-
-            function formatTime(seconds) {
-                if (isNaN(seconds)) return "0:00";
-                const m = Math.floor(seconds / 60);
-                const s = Math.floor(seconds % 60);
-                return `${m}:${s.toString().padStart(2, '0')}`;
-            }
-
-            function levenshtein(s, t) {
-                if (!s.length) return t.length;
-                if (!t.length) return s.length;
-                const arr = [];
-                for (let i = 0; i <= t.length; i++) {
-                    arr[i] = [i];
-                    for (let j = 1; j <= s.length; j++) {
-                        arr[i][j] = i === 0 ? j : Math.min(
-                            arr[i - 1][j] + 1,
-                            arr[i][j - 1] + 1,
-                            arr[i - 1][j - 1] + (s[j - 1] === t[i - 1] ? 0 : 1)
-                        );
-                    }
-                }
-                return arr[t.length][s.length];
-            }
-
-            // FIX #5: Strip leading article prefixes only as whole words, not mid-word
-            function stripArticles(str) {
-                return str.replace(/\b(surah|al|an|as|ar|at|az|ad|ash)\b\s*/g, '').trim();
-            }
-
-            function findBestSurahMatch(query) {
-                query = stripArticles(query.toLowerCase()).replace(/[^a-z\s]/g, '').trim();
-                if (!query) return null;
-
-                let bestMatch = null;
-                let lowestScore = Infinity;
-
-                for (const surah of allSurahs) {
-                    for (const alias of surah.aliases) {
-                        const cleanAlias = stripArticles(alias);
-
-                        // Exact match
-                        if (cleanAlias === query) return surah.id;
-
-                        // Substring bonus: if query is fully contained in alias or vice versa
-                        const substringBonus = (cleanAlias.includes(query) || query.includes(cleanAlias)) ? -1 : 0;
-
-                        const dist = levenshtein(query, cleanAlias);
-                        // Heavier length penalty so short queries don't wildly match long aliases
-                        const lengthPenalty = Math.abs(query.length - cleanAlias.length) * 0.8;
-                        const score = dist + lengthPenalty + substringBonus;
-
-                        if (score < lowestScore) {
-                            lowestScore = score;
-                            bestMatch = surah.id;
-                        }
-                    }
-                }
-
-                // Adaptive threshold: shorter queries need tighter match
-                const threshold = query.length <= 4 ? 1.5 : query.length <= 6 ? 2.5 : 3.5;
-                return lowestScore <= threshold ? bestMatch : null;
-            }
-
-            // --- API ---
-            async function fetchAyah(surahNum, ayahNum, autoPlay = false) {
-                els.loadingOverlay.classList.remove('hidden');
-                try {
-                    const [arRes, enRes] = await Promise.all([
-                        fetch(`https://api.alquran.cloud/v1/ayah/${surahNum}:${ayahNum}/${state.reciter}`),
-                        fetch(`https://api.alquran.cloud/v1/ayah/${surahNum}:${ayahNum}/en.asad`)
-                    ]);
-
-                    const arData = await arRes.json();
-                    const enData = await enRes.json();
-
-                    if (arData.code !== 200 || enData.code !== 200) throw new Error("Verse not found");
-
-                    state.surah = surahNum;
-                    state.ayah = ayahNum;
-                    state.totalAyahsInCurrentSurah = arData.data.surah.numberOfAyahs;
-
-                    // FIX #3: Proper fade animation — remove class, update DOM, re-add
-                    els.ayahContent.classList.remove('fade-in-up');
-                    void els.ayahContent.offsetWidth; // force reflow
-
-                    els.surahBadge.textContent = `Surah ${arData.data.surah.englishName}`;
-                    els.arabicText.textContent = arData.data.text;
-                    els.englishText.textContent = enData.data.text;
-                    els.ayahNumber.textContent = `Verse ${state.ayah} of ${state.totalAyahsInCurrentSurah}`;
-
-                    els.ayahContent.classList.add('fade-in-up');
-
-                    els.audio.src = arData.data.audio;
-                    els.audio.load();
-
-                    if (autoPlay) playAudio();
-
-                } catch (error) {
-                    showToast(`Error: ${error.message}`, 'error');
-                } finally {
-                    els.loadingOverlay.classList.add('hidden');
-                }
-            }
-
-            // --- AUDIO CONTROLS ---
-            function playAudio() {
-                els.audio.play().then(() => {
-                    state.isPlaying = true;
-                    updatePlayIcon();
-                }).catch(() => showToast("Playback failed.", 'error'));
-            }
-
-            function pauseAudio() {
-                els.audio.pause();
-                state.isPlaying = false;
-                updatePlayIcon();
-            }
-
-            function updatePlayIcon() {
-                if (state.isPlaying) {
-                    els.playIcon.className = 'ph ph-pause-circle text-4xl';
-                    els.btnPlay.classList.remove('bg-islamic-600');
-                    els.btnPlay.classList.add('bg-red-600');
-                } else {
-                    els.playIcon.className = 'ph ph-play-circle text-4xl';
-                    els.btnPlay.classList.remove('bg-red-600');
-                    els.btnPlay.classList.add('bg-islamic-600');
-                }
-            }
-
-            function playNext() {
-                if (state.ayah < state.totalAyahsInCurrentSurah) {
-                    fetchAyah(state.surah, state.ayah + 1, true);
-                } else if (state.surah < 114) {
-                    fetchAyah(state.surah + 1, 1, true);
-                } else {
-                    // FIX #4: Give user feedback at end of Quran
-                    showToast("You have reached the end of the Quran.", 'info');
-                }
-            }
-
-            function playPrev() {
-                if (state.ayah > 1) {
-                    fetchAyah(state.surah, state.ayah - 1, true);
-                } else if (state.surah > 1) {
-                    fetchAyah(state.surah - 1, 1, true);
-                }
-            }
-
-            els.audio.addEventListener('timeupdate', () => {
-                if (!isNaN(els.audio.duration)) {
-                    els.seekBar.value = (els.audio.currentTime / els.audio.duration) * 100;
-                    els.timeCurrent.textContent = formatTime(els.audio.currentTime);
-                    els.timeTotal.textContent = formatTime(els.audio.duration);
-                }
-            });
-
-            els.audio.addEventListener('ended', () => {
-                state.isPlaying = false;
-                updatePlayIcon();
-                if (state.isRepeating) {
-                    playAudio();
-                } else {
-                    playNext();
-                }
-            });
-
-            els.seekBar.addEventListener('input', (e) => {
-                if (!isNaN(els.audio.duration)) {
-                    els.audio.currentTime = (e.target.value / 100) * els.audio.duration;
-                }
-            });
-
-            els.volBar.addEventListener('input', (e) => {
-                els.audio.volume = e.target.value / 100;
-                const v = els.audio.volume;
-                els.volIcon.className = 'ph text-slate-400 text-lg flex-shrink-0 ' +
-                    (v === 0 ? 'ph-speaker-x' : v < 0.5 ? 'ph-speaker-low' : 'ph-speaker-high');
-            });
-
-            els.btnPlay.addEventListener('click', () => state.isPlaying ? pauseAudio() : playAudio());
-            els.btnNext.addEventListener('click', playNext);
-            els.btnPrev.addEventListener('click', playPrev);
-
-            els.btnRepeat.addEventListener('click', () => {
-                state.isRepeating = !state.isRepeating;
-                els.btnRepeat.classList.toggle('text-slate-500', !state.isRepeating);
-                els.btnRepeat.classList.toggle('text-islamic-400', state.isRepeating);
-            });
-
-            els.reciterSelect.addEventListener('change', (e) => {
-                state.reciter = e.target.value;
-                fetchAyah(state.surah, state.ayah, state.isPlaying);
-            });
-
-            els.toggleHelp.addEventListener('click', () => {
-                const isHidden = els.helpContent.style.display === 'none' || els.helpContent.style.display === '';
-                els.helpContent.style.display = isHidden ? 'grid' : 'none';
-                els.helpChevron.classList.toggle('rotate-180', isHidden);
-            });
-
-            // ─── DEEPGRAM PUSH-TO-SPEAK ───────────────────────────────────────────────
-            // Architecture:
-            //   hold → getUserMedia → AudioContext → ScriptProcessorNode (PCM chunks)
-            //       → WebSocket to Deepgram streaming API → interim + final transcripts
-            //   release → close WebSocket → process last final transcript
-
-            const DG_KEY_STORAGE = 'dg_api_key';
-            let dgApiKey = localStorage.getItem(DG_KEY_STORAGE) || '';
-
-            // Show API key setup modal if no key saved
-            function showKeyModal(errorMsg = '') {
-                const existing = document.getElementById('dg-modal');
-                if (existing) existing.remove();
-
-                const modal = document.createElement('div');
-                modal.id = 'dg-modal';
-                modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
-                modal.style.background = 'rgba(0,0,0,0.7)';
-                modal.innerHTML = `
-                    <div class="glass rounded-3xl p-6 w-full max-w-md shadow-2xl border border-islamic-800">
-                        <div class="flex items-center gap-3 mb-4">
-                            <div class="w-10 h-10 rounded-full bg-islamic-900 border border-islamic-600 flex items-center justify-center">
-                                <i class="ph ph-key text-xl text-islamic-400"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-white font-bold text-lg">Deepgram API Key</h2>
-                                <p class="text-xs text-slate-400">Required for AI voice recognition</p>
-                            </div>
-                        </div>
-                        ${errorMsg ? `<p class="text-red-400 text-sm mb-3 bg-red-900/30 rounded-xl px-3 py-2"><i class="ph ph-warning mr-1"></i>${errorMsg}</p>` : ''}
-                        <p class="text-slate-400 text-sm mb-4">
-                            Get a free key at <a href="https://console.deepgram.com" target="_blank" class="text-islamic-400 underline">console.deepgram.com</a>. 
-                            Your key is stored only in your browser.
-                        </p>
-                        <input id="dg-key-input" type="password" placeholder="Paste your Deepgram API key..."
-                            class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-islamic-500 mb-4"
-                            value="${dgApiKey}" />
-                        <div class="flex gap-3">
-                            <button id="dg-key-save" class="flex-1 bg-islamic-600 hover:bg-islamic-500 text-white rounded-xl py-3 text-sm font-semibold transition-colors">
-                                <i class="ph ph-check mr-1"></i>Save & Connect
-                            </button>
-                            ${dgApiKey ? `<button id="dg-key-cancel" class="px-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-sm transition-colors">Cancel</button>` : ''}
-                        </div>
-                    </div>`;
-                document.body.appendChild(modal);
-
-                document.getElementById('dg-key-input').focus();
-                document.getElementById('dg-key-save').addEventListener('click', () => {
-                    const val = document.getElementById('dg-key-input').value.trim();
-                    if (!val) { showKeyModal('Please enter a valid API key.'); return; }
-                    dgApiKey = val;
-                    localStorage.setItem(DG_KEY_STORAGE, val);
-                    modal.remove();
-                    showToast('Deepgram connected!', 'success');
-                    updateKeyBtnUI();
-                });
-                const cancelBtn = document.getElementById('dg-key-cancel');
-                if (cancelBtn) cancelBtn.addEventListener('click', () => modal.remove());
-            }
-
-            // Key settings button in mic panel (injected after DOM ready)
-            const keyBtn = document.createElement('button');
-            keyBtn.id = 'dg-key-btn';
-            keyBtn.className = 'mt-2 text-xs text-slate-500 hover:text-islamic-400 transition-colors flex items-center gap-1';
-            keyBtn.innerHTML = `<i class="ph ph-gear"></i> <span id="dg-key-label">Set API Key</span>`;
-            keyBtn.addEventListener('click', () => showKeyModal());
-            els.micBtn.parentElement.appendChild(keyBtn);
-
-            function updateKeyBtnUI() {
-                const label = document.getElementById('dg-key-label');
-                if (dgApiKey) {
-                    label.textContent = 'API Key ✓';
-                    keyBtn.classList.add('text-islamic-600');
-                    keyBtn.classList.remove('text-slate-500');
-                } else {
-                    label.textContent = 'Set API Key';
-                    keyBtn.classList.remove('text-islamic-600');
-                    keyBtn.classList.add('text-slate-500');
-                }
-            }
-            updateKeyBtnUI();
-
-            // ── Deepgram streaming state ──
-            let dgSocket = null;
-            let dgStream = null;
-            let dgAudioCtx = null;
-            let dgProcessor = null;
-            let dgInterimText = '';
-            let dgFinalText = '';
-
-            async function startDeepgram() {
-                if (!dgApiKey) { showKeyModal('Please set your Deepgram API key first.'); return; }
-
-                state.isPressing = true;
-                dgFinalText = '';
-                dgInterimText = '';
-
-                els.micBtn.classList.add('mic-btn-active');
-                els.micIcon.className = 'ph ph-microphone text-4xl text-white transition-colors pointer-events-none';
-                els.micStatus.textContent = 'CONNECTING...';
-                els.micStatus.className = 'mt-4 text-sm text-yellow-400 font-medium tracking-wide';
-                els.transcriptDisplay.textContent = '...';
-                els.transcriptDisplay.classList.add('text-islamic-400', 'animate-pulse-fast');
-                if (state.isPlaying) pauseAudio();
-
-                // 1. Get microphone
-                try {
-                    dgStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-                } catch (err) {
-                    showToast('Microphone access denied.', 'error');
-                    stopDeepgram(); return;
-                }
-
-                // 2. Open Deepgram WebSocket
-                // nova-3 model — best accuracy, handles Arabic names well
-                const url = 'wss://api.deepgram.com/v1/listen?' + new URLSearchParams({
-                    model: 'nova-3',
-                    language: 'en-US',
-                    encoding: 'linear16',
-                    sample_rate: '16000',
-                    channels: '1',
-                    interim_results: 'true',
-                    punctuate: 'false',
-                    smart_format: 'false',
-                });
-
-                dgSocket = new WebSocket(url, ['token', dgApiKey]);
-                dgSocket.binaryType = 'arraybuffer';
-
-                dgSocket.onopen = () => {
-                    els.micStatus.textContent = 'LISTENING...';
-                    els.micStatus.className = 'mt-4 text-sm text-islamic-400 font-medium tracking-wide';
-
-                    // 3. Pipe mic → PCM16 → WebSocket
-                    dgAudioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-                    const source = dgAudioCtx.createMediaStreamSource(dgStream);
-                    // ScriptProcessor: 4096 samples, 1 input, 1 output channel
-                    dgProcessor = dgAudioCtx.createScriptProcessor(4096, 1, 1);
-                    dgProcessor.onaudioprocess = (e) => {
-                        if (dgSocket && dgSocket.readyState === WebSocket.OPEN) {
-                            const float32 = e.inputBuffer.getChannelData(0);
-                            // Convert Float32 → Int16 PCM
-                            const pcm16 = new Int16Array(float32.length);
-                            for (let i = 0; i < float32.length; i++) {
-                                const s = Math.max(-1, Math.min(1, float32[i]));
-                                pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-                            }
-                            dgSocket.send(pcm16.buffer);
-                        }
-                    };
-                    source.connect(dgProcessor);
-                    dgProcessor.connect(dgAudioCtx.destination);
-                };
-
-                dgSocket.onmessage = (evt) => {
-                    try {
-                        const msg = JSON.parse(evt.data);
-                        const alt = msg?.channel?.alternatives?.[0];
-                        if (!alt) return;
-                        const transcript = alt.transcript?.trim();
-                        if (!transcript) return;
-
-                        if (msg.is_final) {
-                            dgFinalText += (dgFinalText ? ' ' : '') + transcript;
-                            dgInterimText = '';
-                        } else {
-                            dgInterimText = transcript;
-                        }
-
-                        const display = (dgFinalText + (dgInterimText ? ' ' + dgInterimText : '')).trim();
-                        els.transcriptDisplay.textContent = `"${display}"`;
-                    } catch (_) {}
-                };
-
-                dgSocket.onerror = () => {
-                    showToast('Deepgram connection error. Check your API key.', 'error');
-                    showKeyModal('Connection failed — verify your API key.');
-                    stopDeepgram();
-                };
-
-                dgSocket.onclose = (e) => {
-                    // Code 1008 = invalid credentials
-                    if (e.code === 1008 || e.reason?.toLowerCase().includes('auth')) {
-                        showKeyModal('Invalid API key. Please re-enter.');
-                    }
-                };
-            }
-
-            function stopDeepgram() {
-                state.isPressing = false;
-
-                // Tear down audio pipeline
-                if (dgProcessor) { try { dgProcessor.disconnect(); } catch(_){} dgProcessor = null; }
-                if (dgAudioCtx)  { try { dgAudioCtx.close(); }        catch(_){} dgAudioCtx = null; }
-                if (dgStream)    { dgStream.getTracks().forEach(t => t.stop()); dgStream = null; }
-
-                // Close socket gracefully
-                if (dgSocket) {
-                    // Send empty keepalive to flush final results before closing
-                    if (dgSocket.readyState === WebSocket.OPEN) {
-                        dgSocket.send(JSON.stringify({ type: 'CloseStream' }));
-                        // Give 600ms for last final transcript to arrive
-                        setTimeout(() => { try { dgSocket.close(); } catch(_){} dgSocket = null; processAfterStop(); }, 600);
-                    } else {
-                        dgSocket = null;
-                        processAfterStop();
-                    }
-                } else {
-                    processAfterStop();
-                }
-
-                // UI reset
-                els.micBtn.classList.remove('mic-btn-active');
-                els.micIcon.className = 'ph ph-microphone text-4xl text-slate-400 transition-colors pointer-events-none';
-                els.micStatus.textContent = 'HOLD TO SPEAK';
-                els.micStatus.className = 'mt-4 text-sm text-islamic-500 font-medium tracking-wide';
-                els.transcriptDisplay.classList.remove('animate-pulse-fast', 'text-islamic-400');
-            }
-
-            function processAfterStop() {
-                // Use whatever final text we have (interim is discarded on release)
-                const text = dgFinalText.trim();
-                if (text) {
-                    processVoiceCommand(text.toLowerCase());
-                } else {
-                    els.transcriptDisplay.textContent = 'Press and hold the mic to speak...';
-                }
-            }
-
-            // Mouse & Touch events
-            function onPressStart(e) {
-                e.preventDefault();
-                if (state.isPressing) return;
-                startDeepgram();
-            }
-            function onPressEnd(e) {
-                if (!state.isPressing) return;
-                stopDeepgram();
-            }
-
-            els.micBtn.addEventListener('mousedown', onPressStart);
-            els.micBtn.addEventListener('touchstart', onPressStart, { passive: false });
-            window.addEventListener('mouseup', onPressEnd);
-            window.addEventListener('touchend', onPressEnd);
-            window.addEventListener('mouseleave', onPressEnd);
-
-            // --- COMMAND PARSER ---
-            function processVoiceCommand(text) {
-                if (!text) return;
-                text = text.replace(/[.,!?"]/g, '').trim().toLowerCase();
-
-                // ── Control commands ──
-                if (/^(pause|stop|pause recitation)$/.test(text)) { pauseAudio(); return; }
-                if (/^(play|resume|continue)$/.test(text))         { playAudio();  return; }
-                if (/next (verse|ayah)/.test(text))                { playNext();   return; }
-                if (/(previous|prev|back) (verse|ayah)/.test(text)){ playPrev();   return; }
-                if (/repeat verse/.test(text)) {
-                    state.isRepeating = true;
-                    els.btnRepeat.classList.remove('text-slate-500');
-                    els.btnRepeat.classList.add('text-islamic-400');
-                    showToast("Repeat Verse: ON", "success");
-                    return;
-                }
-
-                // ── Strip leading action words ──
-                let surahQuery = text
-                    .replace(/^(play|read|recite|open|go to|navigate to|show me)\s+/i, '')
-                    .replace(/\bsurah\b/gi, '')
-                    .trim();
-
-                let targetVerseNum = 1;
-
-                // ── Extract verse number — supports digits AND spoken numbers ──
-                // Patterns: "verse 5", "verse fifty five", "ayah twenty two", "number 3"
-                // Greedy: capture everything after the keyword as the potential number phrase
-                const verseKeywordMatch = surahQuery.match(
-                    /(?:verse|ayah|ayat|number|no\.?)\s+([\w\s-]+?)\s*$/i
-                );
-                if (verseKeywordMatch) {
-                    const versePhrase = verseKeywordMatch[1].trim();
-                    surahQuery = surahQuery.replace(verseKeywordMatch[0], '').trim();
-                    const parsed = wordsToInt(versePhrase);
-                    if (parsed && parsed > 0) targetVerseNum = parsed;
-                } else {
-                    // No keyword — check if query ends with a standalone number phrase
-                    // e.g. "rahman fifty five" or "yaseen 5"
-                    const trailingNumMatch = surahQuery.match(
-                        /\s+((?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\s-]?(?:one|two|three|four|five|six|seven|eight|nine)?)|(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen)|\d+)\s*$/i
-                    );
-                    if (trailingNumMatch) {
-                        const parsed = wordsToInt(trailingNumMatch[1]);
-                        if (parsed && parsed > 0) {
-                            targetVerseNum = parsed;
-                            surahQuery = surahQuery.replace(trailingNumMatch[0], '').trim();
-                        }
-                    }
-                }
-
-                if (!surahQuery) {
-                    showToast("Please say a Surah name.", "error");
-                    return;
-                }
-
-                const matchedSurahId = findBestSurahMatch(surahQuery);
-                if (matchedSurahId) {
-                    const surahName = allSurahs.find(s => s.id === matchedSurahId).name;
-                    showToast(`▶ Surah ${surahName} — Verse ${targetVerseNum}`, "success");
-                    fetchAyah(matchedSurahId, targetVerseNum, true);
-                } else {
-                    showToast(`Not recognized: "${surahQuery}" — try again`, "error");
-                    els.transcriptDisplay.textContent = `Not recognized: "${text}"`;
-                }
-            }
-
-            // Init
-            fetchAyah(1, 1, false);
-        });
-    </script>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-streak">0</div>
+      <div class="stat-label">🔥 Day Streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value success" id="stat-completed">0</div>
+      <div class="stat-label">Completed</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value accent2" id="stat-percent">0%</div>
+      <div class="stat-label">Progress</div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:24px;">
+    <div class="flex-between mb-8">
+      <span class="label">Overall Progress</span>
+      <span id="progress-label" class="text-muted" style="font-size:13px;">0 / 30 days</span>
+    </div>
+    <div class="progress-bar-wrap" style="height:12px;">
+      <div class="progress-bar" id="main-progress-bar" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="today-card" id="today-card">
+    <div class="label" style="margin-bottom:8px;">Today's Workout</div>
+    <h2 id="today-title">Rest & Recovery</h2>
+    <div class="workout-meta" id="today-meta"></div>
+    <div class="exercise-preview-list" id="today-exercises"></div>
+    <div id="today-actions" style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Week Overview</h3>
+    <div class="week-bar" id="week-overview-bar"></div>
+    <div id="week-days-labels" style="display:flex;gap:6px;"></div>
+  </div>
+</div>
+
+<!-- ── WORKOUT PAGE ── -->
+<div id="page-workout" class="page">
+  <div class="flex-between mb-24">
+    <div>
+      <div class="label mb-8" id="workout-day-label">DAY 1</div>
+      <h2 id="workout-title">Loading...</h2>
+    </div>
+    <div id="workout-day-nav" style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-secondary btn-sm" onclick="changeWorkoutDay(-1)">← Prev</button>
+      <button class="btn btn-secondary btn-sm" onclick="changeWorkoutDay(1)">Next →</button>
+    </div>
+  </div>
+
+  <div class="timer-section" id="timer-section">
+    <div class="timer-label" id="timer-phase-label">READY</div>
+    <div class="timer-name" id="timer-exercise-name">Press Start to begin</div>
+    <div class="timer-ring">
+      <svg width="180" height="180" viewBox="0 0 180 180">
+        <circle class="bg" cx="90" cy="90" r="82"/>
+        <circle class="fg" id="timer-ring-fg" cx="90" cy="90" r="82"
+          stroke-dasharray="515" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-center">
+        <div class="big" id="timer-big">--</div>
+        <div class="small" id="timer-small">SECONDS</div>
+      </div>
+    </div>
+    <div class="timer-controls">
+      <button class="btn btn-primary" id="btn-timer-start" onclick="timerStart()">▶ START</button>
+      <button class="btn btn-secondary" id="btn-timer-pause" onclick="timerPause()" disabled>⏸ PAUSE</button>
+      <button class="btn btn-secondary" id="btn-timer-skip" onclick="timerSkip()" disabled>⏭ SKIP</button>
+      <button class="btn btn-secondary btn-sm" onclick="timerReset()">↺ RESET</button>
+    </div>
+    <div id="timer-progress-info" style="margin-top:16px;font-size:13px;color:var(--text2);font-family:var(--font-mono);"></div>
+  </div>
+
+  <div id="workout-phases"></div>
+
+  <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap;">
+    <button class="btn btn-primary" id="btn-complete-day" onclick="completeDay()">✓ Mark Day Complete</button>
+    <button class="btn btn-secondary" onclick="timerReset()">↺ Restart Workout</button>
+  </div>
+</div>
+
+<!-- ── CALENDAR PAGE ── -->
+<div id="page-calendar" class="page">
+  <div class="mb-24">
+    <div class="label mb-8">30-Day View</div>
+    <h2>Challenge Calendar</h2>
+    <p class="text-muted mt-16">Track your journey through all 30 days. Tap any day to view its workout.</p>
+  </div>
+
+  <div class="card mb-24">
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+      <span class="chip" style="border-color:var(--success);color:var(--success);">● Completed</span>
+      <span class="chip" style="border-color:var(--accent);color:var(--accent);">● Today</span>
+      <span class="chip" style="border-color:var(--accent2);color:var(--accent2);">● Rest Day</span>
+      <span class="chip" style="border-color:var(--accent3);color:var(--accent3);">● Missed</span>
+      <span class="chip">● Future</span>
+    </div>
+    <div class="calendar-grid" id="cal-header-row"></div>
+    <div class="calendar-grid" id="calendar-grid"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Selected Day</h3>
+    <div id="cal-selected-day">
+      <p class="text-muted">Click a day to see its workout</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── EXERCISES PAGE ── -->
+<div id="page-exercises" class="page">
+  <div class="mb-24">
+    <div class="label mb-8">Exercise Library</div>
+    <h2>All Movements</h2>
+    <p class="text-muted mt-16">Master every exercise in the challenge with step-by-step instructions.</p>
+  </div>
+
+  <div class="mb-24">
+    <div class="label mb-12">Animated Demonstrations</div>
+    <div class="demo-grid" id="svg-demo-grid"></div>
+  </div>
+
+  <input type="text" class="lib-search" placeholder="🔍  Search exercises..." oninput="filterLibrary(this.value)">
+  <div class="lib-grid" id="lib-grid"></div>
+</div>
+
+<!-- ── STATS PAGE ── -->
+<div id="page-stats" class="page">
+  <div class="mb-24">
+    <div class="label mb-8">Your Progress</div>
+    <h2>Statistics</h2>
+  </div>
+
+  <div class="stats-grid" style="margin-bottom:24px;">
+    <div class="stat-card">
+      <div class="stat-value" id="s-total-workouts">0</div>
+      <div class="stat-label">Workouts Done</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value accent2" id="s-total-mins">0</div>
+      <div class="stat-label">Est. Minutes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value accent3" id="s-longest-streak">0</div>
+      <div class="stat-label">Longest Streak</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value success" id="s-completion">0%</div>
+      <div class="stat-label">Completion Rate</div>
+    </div>
+  </div>
+
+  <div class="card mb-20">
+    <h3 class="mb-16">Weekly Breakdown</h3>
+    <div id="weekly-chart"></div>
+  </div>
+
+  <div class="card mb-20">
+    <h3 class="mb-16">Achievements</h3>
+    <div class="achievements-grid" id="achievements-grid"></div>
+  </div>
+
+  <div class="card">
+    <h3 class="mb-16">Phase Progress</h3>
+    <div id="phase-progress"></div>
+    <div class="divider"></div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn btn-secondary btn-sm" onclick="exportProgress()">📤 Export Progress</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmReset()">🗑 Reset Challenge</button>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="label" id="modal-label">Exercise</div>
+        <h3 id="modal-title" style="margin-top:6px;"></h3>
+      </div>
+      <button class="modal-close" onclick="closeModalDirect()">×</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════
+const EXERCISES = {
+  pushup: {
+    name: "Push-Up",
+    muscles: "Chest, Triceps, Shoulders",
+    difficulty: "medium",
+    desc: "Classic upper body pushing movement that builds chest, shoulder and tricep strength.",
+    steps: [
+      "Start in a high plank with hands shoulder-width apart, arms straight.",
+      "Lower your chest toward the floor, keeping elbows at ~45° from torso.",
+      "Keep your core tight and body in a straight line throughout.",
+      "Push back up explosively until arms are fully extended.",
+      "Breathe in as you lower, out as you push up."
+    ],
+    tip: "If too hard, drop to your knees. Too easy? Try archer or close-grip push-ups."
+  },
+  squat: {
+    name: "Bodyweight Squat",
+    muscles: "Quads, Glutes, Hamstrings",
+    difficulty: "easy",
+    desc: "The fundamental lower body strength exercise targeting the entire posterior and anterior chain.",
+    steps: [
+      "Stand with feet shoulder-width apart, toes slightly turned out.",
+      "Initiate by pushing hips back and bending knees simultaneously.",
+      "Lower until thighs are parallel to floor (or as low as mobility allows).",
+      "Keep chest up and knees tracking over toes throughout.",
+      "Drive through heels to stand back up. Squeeze glutes at top."
+    ],
+    tip: "Hold your arms forward for counterbalance. Focus on depth over speed."
+  },
+  plank: {
+    name: "Plank Hold",
+    muscles: "Core, Shoulders, Glutes",
+    difficulty: "easy",
+    desc: "Isometric core exercise that builds endurance throughout the entire core and stabilizer muscles.",
+    steps: [
+      "Place forearms on the floor, elbows directly below shoulders.",
+      "Extend legs behind you, resting on balls of feet.",
+      "Create a perfectly straight line from head to heels.",
+      "Engage abs, glutes, and quads — avoid sagging or piking hips.",
+      "Breathe steadily. Hold for the prescribed duration."
+    ],
+    tip: "Squeeze everything. Imagine someone is about to punch you in the stomach."
+  },
+  lunge: {
+    name: "Reverse Lunge",
+    muscles: "Quads, Glutes, Hamstrings, Balance",
+    difficulty: "medium",
+    desc: "Unilateral leg exercise that builds strength and improves balance and coordination.",
+    steps: [
+      "Stand tall with feet together, hands on hips.",
+      "Step one foot backward, lowering your knee toward the floor.",
+      "Keep front shin vertical — don't let knee cave inward.",
+      "Lower until back knee nearly touches floor (90° bend).",
+      "Push through front heel to return to starting position."
+    ],
+    tip: "Reverse lunges are easier on knees than forward lunges — great for beginners."
+  },
+  jumpingjack: {
+    name: "Jumping Jack",
+    muscles: "Full Body, Cardiovascular",
+    difficulty: "easy",
+    desc: "Classic cardio exercise that raises heart rate and warms up the entire body.",
+    steps: [
+      "Stand with feet together, arms at sides.",
+      "Jump feet out to about shoulder-width as arms raise overhead.",
+      "Immediately jump feet back together as arms lower.",
+      "Land softly on the balls of your feet.",
+      "Maintain a steady rhythm and light breathing."
+    ],
+    tip: "Keep the movement controlled. Focus on soft landings to protect your joints."
+  },
+  mountainclimber: {
+    name: "Mountain Climber",
+    muscles: "Core, Shoulders, Hip Flexors, Cardio",
+    difficulty: "medium",
+    desc: "Dynamic core exercise that combines planking stability with cardio conditioning.",
+    steps: [
+      "Start in a high plank position, arms straight under shoulders.",
+      "Drive one knee toward your chest while keeping hips level.",
+      "Quickly switch legs in a running motion.",
+      "Keep core engaged and hips from bouncing up.",
+      "Move at a controlled-to-fast pace for prescribed time."
+    ],
+    tip: "Go slower for more core work, faster for cardio. Quality over speed."
+  },
+  glute_bridge: {
+    name: "Glute Bridge",
+    muscles: "Glutes, Hamstrings, Core",
+    difficulty: "easy",
+    desc: "Essential posterior chain activation exercise performed lying on your back.",
+    steps: [
+      "Lie on your back with knees bent, feet flat, hip-width apart.",
+      "Place arms at sides, palms down.",
+      "Press through heels to lift hips until body forms a straight line.",
+      "Squeeze glutes hard at the top. Hold briefly.",
+      "Lower slowly with control. Repeat."
+    ],
+    tip: "Drive through heels, not toes. Squeeze the glutes as if cracking a walnut."
+  },
+  tricep_dip: {
+    name: "Tricep Dip",
+    muscles: "Triceps, Shoulders, Chest",
+    difficulty: "medium",
+    desc: "Upper body pressing movement targeting the triceps using a chair or floor.",
+    steps: [
+      "Sit on edge of chair, hands beside hips, fingers forward.",
+      "Scoot forward so hips are off chair, legs extended or bent.",
+      "Lower body by bending elbows to 90°, keeping back close to chair.",
+      "Press back up until arms are straight.",
+      "Keep shoulders down, avoid shrugging throughout."
+    ],
+    tip: "No chair? Do floor tricep dips with bent knees. Keep elbows close to body."
+  },
+  superman: {
+    name: "Superman Hold",
+    muscles: "Lower Back, Glutes, Upper Back",
+    difficulty: "easy",
+    desc: "Back extension exercise performed prone to strengthen the posterior chain.",
+    steps: [
+      "Lie face down with arms extended overhead, legs straight.",
+      "Simultaneously lift arms, chest, and legs off the floor.",
+      "Squeeze glutes and back muscles throughout.",
+      "Hold for 2 seconds at the top.",
+      "Lower with control. Repeat."
+    ],
+    tip: "Look down to keep neck neutral. Focus on the squeeze, not height."
+  },
+  high_knees: {
+    name: "High Knees",
+    muscles: "Hip Flexors, Core, Cardio",
+    difficulty: "medium",
+    desc: "High-intensity cardio drill that targets the hip flexors and raises heart rate rapidly.",
+    steps: [
+      "Stand with feet hip-width apart.",
+      "Drive one knee up to hip height while hopping on the other foot.",
+      "Pump arms in opposition to legs.",
+      "Alternate legs quickly in a running-in-place motion.",
+      "Land softly on balls of feet. Keep core tight."
+    ],
+    tip: "Land lightly! Loud feet mean hard impact. Aim for silent, controlled steps."
+  },
+  burpee: {
+    name: "Burpee",
+    muscles: "Full Body, Cardiovascular",
+    difficulty: "hard",
+    desc: "The ultimate full-body conditioning exercise combining squat, plank, and jump.",
+    steps: [
+      "Stand with feet shoulder-width apart.",
+      "Squat down and place hands on floor just outside feet.",
+      "Jump feet back into high plank position.",
+      "Perform one push-up (optional for beginners).",
+      "Jump feet back to hands, then explode up with arms overhead."
+    ],
+    tip: "Beginners: step feet back instead of jumping. Remove push-up. Build up."
+  },
+  calf_raise: {
+    name: "Calf Raise",
+    muscles: "Calves, Tibialis",
+    difficulty: "easy",
+    desc: "Simple isolation exercise for the calves. Can be performed anywhere.",
+    steps: [
+      "Stand with feet hip-width apart, toes forward.",
+      "Rise onto the balls of your feet as high as possible.",
+      "Pause at the top and squeeze calves.",
+      "Lower slowly with control.",
+      "Add a slight pause at the bottom for full range."
+    ],
+    tip: "Do these on a step edge for greater range of motion as you progress."
+  },
+  pike_pushup: {
+    name: "Pike Push-Up",
+    muscles: "Shoulders, Triceps, Upper Chest",
+    difficulty: "medium",
+    desc: "A push-up variation with elevated hips that targets the shoulders more than standard push-ups.",
+    steps: [
+      "Start in a downward dog position — hips high, body inverted V.",
+      "Bend elbows to lower head toward floor between hands.",
+      "Keep elbows tracking back (not flaring out).",
+      "Push back up to starting position.",
+      "The closer feet are to hands, the more vertical the angle."
+    ],
+    tip: "This is the foundation for handstand push-ups. Master this first."
+  },
+  leg_raise: {
+    name: "Lying Leg Raise",
+    muscles: "Lower Abs, Hip Flexors",
+    difficulty: "medium",
+    desc: "Lower abdominal exercise performed lying down for targeted core strength.",
+    steps: [
+      "Lie on back, legs straight, arms at sides or under lower back.",
+      "Keeping legs together and straight, raise them to 90°.",
+      "Slowly lower them back down without letting feet touch floor.",
+      "Keep lower back pressed into floor throughout.",
+      "Breathe out on the way up, in on the way down."
+    ],
+    tip: "Lower back lifting off? Bend knees slightly to reduce leverage."
+  },
+  diamond_pushup: {
+    name: "Diamond Push-Up",
+    muscles: "Triceps, Inner Chest, Shoulders",
+    difficulty: "hard",
+    desc: "Close-grip push-up variation that maximally targets the triceps.",
+    steps: [
+      "Form a diamond shape with thumbs and index fingers touching.",
+      "Place hands on floor, diamond under chest.",
+      "Perform push-ups keeping elbows close to body.",
+      "Lower chest to touch the diamond.",
+      "Push back up to full extension."
+    ],
+    tip: "Wrist pain? Position diamond slightly lower (toward stomach)."
+  },
+  wall_sit: {
+    name: "Wall Sit",
+    muscles: "Quads, Glutes, Calves",
+    difficulty: "medium",
+    desc: "Isometric quad burner that builds endurance and mental toughness.",
+    steps: [
+      "Stand with back against wall, feet shoulder-width apart.",
+      "Slide down until thighs are parallel to floor (90° knee angle).",
+      "Keep back flat against wall, weight in heels.",
+      "Hold for the prescribed time. Breathe steadily.",
+      "Use thighs if you need to push yourself back up."
+    ],
+    tip: "The longer you hold, the greater the burn. Start with 20s, build up."
+  }
+};
+
+// 30-Day Program
+const PROGRAM = [
+  // WEEK 1: Foundation
+  { day:1, title:"Foundation Day 1", phase:"Foundation", rest:false, duration:20,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"30s",rest:15,exId:"jumpingjack"},{name:"Arm Circles",sets:1,reps:"20",rest:15,exId:"jumpingjack"},{name:"Leg Swings",sets:1,reps:"10/leg",rest:15,exId:"lunge"}],
+    main:[{name:"Bodyweight Squat",sets:3,reps:"10",rest:60,exId:"squat"},{name:"Push-Up",sets:3,reps:"5",rest:60,exId:"pushup"},{name:"Glute Bridge",sets:3,reps:"12",rest:45,exId:"glute_bridge"},{name:"Plank Hold",sets:3,reps:"15s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Child's Pose",sets:1,reps:"30s",rest:0,exId:"plank"},{name:"Hip Flexor Stretch",sets:1,reps:"20s/side",rest:0,exId:"lunge"}]},
+
+  { day:2, title:"Foundation Day 2", phase:"Foundation", rest:false, duration:20,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"30s",rest:15,exId:"jumpingjack"},{name:"Hip Circles",sets:1,reps:"10/side",rest:15,exId:"squat"}],
+    main:[{name:"Reverse Lunge",sets:3,reps:"8/leg",rest:60,exId:"lunge"},{name:"Push-Up",sets:3,reps:"6",rest:60,exId:"pushup"},{name:"Superman Hold",sets:3,reps:"10",rest:45,exId:"superman"},{name:"Calf Raise",sets:3,reps:"15",rest:30,exId:"calf_raise"}],
+    cooldown:[{name:"Seated Hamstring Stretch",sets:1,reps:"30s",rest:0,exId:"squat"},{name:"Chest Stretch",sets:1,reps:"20s",rest:0,exId:"pushup"}]},
+
+  { day:3, title:"Active Recovery", phase:"Foundation", rest:true, duration:10,
+    warmup:[],
+    main:[{name:"Jumping Jack",sets:2,reps:"20",rest:30,exId:"jumpingjack"},{name:"Glute Bridge",sets:2,reps:"10",rest:30,exId:"glute_bridge"},{name:"Plank Hold",sets:2,reps:"20s",rest:30,exId:"plank"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"60s",rest:0,exId:"plank"}]},
+
+  { day:4, title:"Foundation Day 3", phase:"Foundation", rest:false, duration:22,
+    warmup:[{name:"High Knees",sets:1,reps:"20s",rest:15,exId:"high_knees"},{name:"Arm Circles",sets:1,reps:"20",rest:15,exId:"jumpingjack"}],
+    main:[{name:"Bodyweight Squat",sets:3,reps:"12",rest:60,exId:"squat"},{name:"Push-Up",sets:3,reps:"7",rest:60,exId:"pushup"},{name:"Mountain Climber",sets:3,reps:"20s",rest:45,exId:"mountainclimber"},{name:"Glute Bridge",sets:3,reps:"15",rest:45,exId:"glute_bridge"},{name:"Plank Hold",sets:2,reps:"20s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Figure 4 Stretch",sets:1,reps:"20s/side",rest:0,exId:"squat"},{name:"Doorway Chest Stretch",sets:1,reps:"20s",rest:0,exId:"pushup"}]},
+
+  { day:5, title:"Foundation Day 4", phase:"Foundation", rest:false, duration:22,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"30s",rest:15,exId:"jumpingjack"},{name:"Hip Rotations",sets:1,reps:"10/side",rest:15,exId:"lunge"}],
+    main:[{name:"Reverse Lunge",sets:3,reps:"10/leg",rest:60,exId:"lunge"},{name:"Tricep Dip",sets:3,reps:"8",rest:60,exId:"tricep_dip"},{name:"Superman Hold",sets:3,reps:"12",rest:45,exId:"superman"},{name:"Calf Raise",sets:3,reps:"20",rest:30,exId:"calf_raise"},{name:"Plank Hold",sets:2,reps:"25s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Quad Stretch",sets:1,reps:"20s/side",rest:0,exId:"lunge"},{name:"Lat Stretch",sets:1,reps:"20s",rest:0,exId:"superman"}]},
+
+  { day:6, title:"Foundation Day 5", phase:"Foundation", rest:false, duration:24,
+    warmup:[{name:"High Knees",sets:1,reps:"30s",rest:15,exId:"high_knees"},{name:"Shoulder Rolls",sets:1,reps:"15",rest:10,exId:"jumpingjack"}],
+    main:[{name:"Bodyweight Squat",sets:4,reps:"12",rest:60,exId:"squat"},{name:"Push-Up",sets:4,reps:"8",rest:60,exId:"pushup"},{name:"Mountain Climber",sets:3,reps:"25s",rest:45,exId:"mountainclimber"},{name:"Glute Bridge",sets:3,reps:"15",rest:45,exId:"glute_bridge"},{name:"Leg Raise",sets:3,reps:"8",rest:45,exId:"leg_raise"}],
+    cooldown:[{name:"Pigeon Stretch",sets:1,reps:"30s/side",rest:0,exId:"lunge"},{name:"Cobra Stretch",sets:1,reps:"20s",rest:0,exId:"superman"}]},
+
+  { day:7, title:"Full Rest Day", phase:"Foundation", rest:true, duration:0,
+    warmup:[], main:[], cooldown:[]},
+
+  // WEEK 2: Building
+  { day:8, title:"Building Day 1", phase:"Building", rest:false, duration:25,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"40s",rest:15,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"20s",rest:15,exId:"high_knees"}],
+    main:[{name:"Bodyweight Squat",sets:4,reps:"15",rest:60,exId:"squat"},{name:"Push-Up",sets:4,reps:"10",rest:60,exId:"pushup"},{name:"Reverse Lunge",sets:3,reps:"10/leg",rest:60,exId:"lunge"},{name:"Plank Hold",sets:3,reps:"30s",rest:45,exId:"plank"},{name:"Glute Bridge",sets:3,reps:"15",rest:45,exId:"glute_bridge"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"60s",rest:0,exId:"plank"}]},
+
+  { day:9, title:"Building Day 2", phase:"Building", rest:false, duration:25,
+    warmup:[{name:"Mountain Climber",sets:1,reps:"20s",rest:15,exId:"mountainclimber"},{name:"Arm Circles",sets:1,reps:"20",rest:10,exId:"pushup"}],
+    main:[{name:"Pike Push-Up",sets:3,reps:"6",rest:60,exId:"pike_pushup"},{name:"Wall Sit",sets:3,reps:"30s",rest:60,exId:"wall_sit"},{name:"Tricep Dip",sets:3,reps:"10",rest:60,exId:"tricep_dip"},{name:"Superman Hold",sets:3,reps:"15",rest:45,exId:"superman"},{name:"Mountain Climber",sets:3,reps:"30s",rest:45,exId:"mountainclimber"}],
+    cooldown:[{name:"Chest & Shoulder Stretch",sets:1,reps:"30s",rest:0,exId:"pushup"},{name:"Hamstring Stretch",sets:1,reps:"30s",rest:0,exId:"squat"}]},
+
+  { day:10, title:"Active Recovery", phase:"Building", rest:true, duration:12,
+    warmup:[],
+    main:[{name:"Jumping Jack",sets:2,reps:"25",rest:30,exId:"jumpingjack"},{name:"Plank Hold",sets:2,reps:"25s",rest:30,exId:"plank"},{name:"Glute Bridge",sets:2,reps:"12",rest:30,exId:"glute_bridge"}],
+    cooldown:[{name:"Full Body Flow",sets:1,reps:"90s",rest:0,exId:"plank"}]},
+
+  { day:11, title:"Building Day 3", phase:"Building", rest:false, duration:28,
+    warmup:[{name:"High Knees",sets:1,reps:"30s",rest:15,exId:"high_knees"},{name:"Jumping Jack",sets:1,reps:"30s",rest:15,exId:"jumpingjack"}],
+    main:[{name:"Bodyweight Squat",sets:4,reps:"15",rest:60,exId:"squat"},{name:"Push-Up",sets:4,reps:"10",rest:60,exId:"pushup"},{name:"Leg Raise",sets:3,reps:"10",rest:45,exId:"leg_raise"},{name:"Calf Raise",sets:3,reps:"25",rest:30,exId:"calf_raise"},{name:"Mountain Climber",sets:3,reps:"35s",rest:45,exId:"mountainclimber"},{name:"Plank Hold",sets:3,reps:"30s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Pigeon Stretch",sets:1,reps:"30s/side",rest:0,exId:"lunge"},{name:"Cat-Cow Stretch",sets:1,reps:"30s",rest:0,exId:"superman"}]},
+
+  { day:12, title:"Building Day 4", phase:"Building", rest:false, duration:28,
+    warmup:[{name:"Mountain Climber",sets:1,reps:"25s",rest:15,exId:"mountainclimber"},{name:"Arm Swings",sets:1,reps:"20",rest:10,exId:"pushup"}],
+    main:[{name:"Reverse Lunge",sets:4,reps:"12/leg",rest:60,exId:"lunge"},{name:"Pike Push-Up",sets:3,reps:"8",rest:60,exId:"pike_pushup"},{name:"Tricep Dip",sets:3,reps:"12",rest:60,exId:"tricep_dip"},{name:"Superman Hold",sets:3,reps:"15",rest:45,exId:"superman"},{name:"Wall Sit",sets:2,reps:"40s",rest:60,exId:"wall_sit"}],
+    cooldown:[{name:"Hip Flexor Stretch",sets:1,reps:"30s/side",rest:0,exId:"lunge"},{name:"Shoulder Stretch",sets:1,reps:"20s/side",rest:0,exId:"pushup"}]},
+
+  { day:13, title:"Building Day 5", phase:"Building", rest:false, duration:30,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"40s",rest:15,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"30s",rest:15,exId:"high_knees"}],
+    main:[{name:"Bodyweight Squat",sets:4,reps:"20",rest:60,exId:"squat"},{name:"Push-Up",sets:4,reps:"12",rest:60,exId:"pushup"},{name:"Mountain Climber",sets:4,reps:"40s",rest:45,exId:"mountainclimber"},{name:"Glute Bridge",sets:4,reps:"15",rest:45,exId:"glute_bridge"},{name:"Leg Raise",sets:3,reps:"12",rest:45,exId:"leg_raise"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"90s",rest:0,exId:"plank"}]},
+
+  { day:14, title:"Full Rest Day", phase:"Building", rest:true, duration:0,
+    warmup:[], main:[], cooldown:[]},
+
+  // WEEK 3: Intensity
+  { day:15, title:"Intensity Day 1", phase:"Intensity", rest:false, duration:32,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"45s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"30s",rest:15,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"20s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:5,reps:"20",rest:60,exId:"squat"},{name:"Push-Up",sets:5,reps:"12",rest:60,exId:"pushup"},{name:"Reverse Lunge",sets:4,reps:"12/leg",rest:60,exId:"lunge"},{name:"Plank Hold",sets:4,reps:"40s",rest:45,exId:"plank"},{name:"Glute Bridge",sets:3,reps:"20",rest:45,exId:"glute_bridge"}],
+    cooldown:[{name:"Hip Flexor Stretch",sets:1,reps:"30s/side",rest:0,exId:"lunge"},{name:"Thoracic Rotation",sets:1,reps:"10/side",rest:0,exId:"superman"}]},
+
+  { day:16, title:"Intensity Day 2", phase:"Intensity", rest:false, duration:32,
+    warmup:[{name:"High Knees",sets:1,reps:"40s",rest:10,exId:"high_knees"},{name:"Arm Circles",sets:1,reps:"20",rest:10,exId:"pushup"}],
+    main:[{name:"Pike Push-Up",sets:4,reps:"10",rest:60,exId:"pike_pushup"},{name:"Wall Sit",sets:4,reps:"45s",rest:60,exId:"wall_sit"},{name:"Tricep Dip",sets:4,reps:"12",rest:60,exId:"tricep_dip"},{name:"Mountain Climber",sets:4,reps:"45s",rest:45,exId:"mountainclimber"},{name:"Superman Hold",sets:4,reps:"12",rest:45,exId:"superman"}],
+    cooldown:[{name:"Chest Stretch",sets:1,reps:"30s",rest:0,exId:"pushup"},{name:"Cobra Stretch",sets:1,reps:"30s",rest:0,exId:"superman"}]},
+
+  { day:17, title:"Active Recovery", phase:"Intensity", rest:true, duration:15,
+    warmup:[],
+    main:[{name:"Jumping Jack",sets:2,reps:"30",rest:30,exId:"jumpingjack"},{name:"Plank Hold",sets:3,reps:"30s",rest:30,exId:"plank"},{name:"Glute Bridge",sets:3,reps:"15",rest:30,exId:"glute_bridge"}],
+    cooldown:[{name:"Full Body Mobility Flow",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:18, title:"Intensity Day 3", phase:"Intensity", rest:false, duration:35,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"45s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"30s",rest:15,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"25s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:5,reps:"20",rest:60,exId:"squat"},{name:"Push-Up",sets:5,reps:"15",rest:60,exId:"pushup"},{name:"Leg Raise",sets:4,reps:"15",rest:45,exId:"leg_raise"},{name:"Mountain Climber",sets:4,reps:"45s",rest:45,exId:"mountainclimber"},{name:"Calf Raise",sets:3,reps:"30",rest:30,exId:"calf_raise"},{name:"Plank Hold",sets:3,reps:"40s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"90s",rest:0,exId:"plank"}]},
+
+  { day:19, title:"Intensity Day 4", phase:"Intensity", rest:false, duration:35,
+    warmup:[{name:"Mountain Climber",sets:1,reps:"30s",rest:15,exId:"mountainclimber"},{name:"High Knees",sets:1,reps:"30s",rest:15,exId:"high_knees"}],
+    main:[{name:"Reverse Lunge",sets:4,reps:"15/leg",rest:60,exId:"lunge"},{name:"Diamond Push-Up",sets:3,reps:"8",rest:60,exId:"diamond_pushup"},{name:"Wall Sit",sets:4,reps:"50s",rest:60,exId:"wall_sit"},{name:"Tricep Dip",sets:4,reps:"15",rest:60,exId:"tricep_dip"},{name:"Superman Hold",sets:4,reps:"15",rest:45,exId:"superman"}],
+    cooldown:[{name:"Hip Flexor Stretch",sets:1,reps:"30s/side",rest:0,exId:"lunge"},{name:"Child's Pose",sets:1,reps:"40s",rest:0,exId:"plank"}]},
+
+  { day:20, title:"Intensity Day 5", phase:"Intensity", rest:false, duration:38,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"45s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"40s",rest:15,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"30s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:5,reps:"25",rest:60,exId:"squat"},{name:"Push-Up",sets:5,reps:"15",rest:60,exId:"pushup"},{name:"Mountain Climber",sets:5,reps:"50s",rest:45,exId:"mountainclimber"},{name:"Glute Bridge",sets:4,reps:"20",rest:45,exId:"glute_bridge"},{name:"Leg Raise",sets:4,reps:"15",rest:45,exId:"leg_raise"},{name:"Plank Hold",sets:3,reps:"45s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:21, title:"Full Rest Day", phase:"Intensity", rest:true, duration:0,
+    warmup:[], main:[], cooldown:[]},
+
+  // WEEK 4: Peak
+  { day:22, title:"Peak Day 1", phase:"Peak", rest:false, duration:40,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"50s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"40s",rest:10,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"30s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:5,reps:"25",rest:60,exId:"squat"},{name:"Push-Up",sets:5,reps:"15",rest:60,exId:"pushup"},{name:"Reverse Lunge",sets:5,reps:"15/leg",rest:60,exId:"lunge"},{name:"Diamond Push-Up",sets:3,reps:"10",rest:60,exId:"diamond_pushup"},{name:"Plank Hold",sets:4,reps:"50s",rest:45,exId:"plank"},{name:"Glute Bridge",sets:4,reps:"20",rest:45,exId:"glute_bridge"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"90s",rest:0,exId:"plank"}]},
+
+  { day:23, title:"Peak Day 2", phase:"Peak", rest:false, duration:40,
+    warmup:[{name:"High Knees",sets:1,reps:"45s",rest:10,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"30s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Pike Push-Up",sets:5,reps:"12",rest:60,exId:"pike_pushup"},{name:"Wall Sit",sets:5,reps:"60s",rest:60,exId:"wall_sit"},{name:"Tricep Dip",sets:5,reps:"15",rest:60,exId:"tricep_dip"},{name:"Mountain Climber",sets:5,reps:"55s",rest:45,exId:"mountainclimber"},{name:"Superman Hold",sets:4,reps:"15",rest:45,exId:"superman"},{name:"Leg Raise",sets:4,reps:"15",rest:45,exId:"leg_raise"}],
+    cooldown:[{name:"Yoga Flow",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:24, title:"Active Recovery", phase:"Peak", rest:true, duration:15,
+    warmup:[],
+    main:[{name:"Jumping Jack",sets:3,reps:"25",rest:30,exId:"jumpingjack"},{name:"Plank Hold",sets:3,reps:"40s",rest:30,exId:"plank"},{name:"Glute Bridge",sets:3,reps:"20",rest:30,exId:"glute_bridge"}],
+    cooldown:[{name:"Full Body Flow",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:25, title:"Peak Day 3", phase:"Peak", rest:false, duration:42,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"50s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"40s",rest:10,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"30s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:6,reps:"25",rest:60,exId:"squat"},{name:"Push-Up",sets:6,reps:"15",rest:60,exId:"pushup"},{name:"Mountain Climber",sets:5,reps:"60s",rest:45,exId:"mountainclimber"},{name:"Leg Raise",sets:5,reps:"15",rest:45,exId:"leg_raise"},{name:"Calf Raise",sets:3,reps:"30",rest:30,exId:"calf_raise"},{name:"Plank Hold",sets:4,reps:"50s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:26, title:"Peak Day 4", phase:"Peak", rest:false, duration:42,
+    warmup:[{name:"Mountain Climber",sets:1,reps:"35s",rest:10,exId:"mountainclimber"},{name:"High Knees",sets:1,reps:"35s",rest:15,exId:"high_knees"}],
+    main:[{name:"Reverse Lunge",sets:5,reps:"15/leg",rest:60,exId:"lunge"},{name:"Diamond Push-Up",sets:4,reps:"12",rest:60,exId:"diamond_pushup"},{name:"Wall Sit",sets:4,reps:"60s",rest:60,exId:"wall_sit"},{name:"Tricep Dip",sets:5,reps:"15",rest:60,exId:"tricep_dip"},{name:"Superman Hold",sets:4,reps:"15",rest:45,exId:"superman"},{name:"Plank Hold",sets:4,reps:"50s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Hip Opener",sets:1,reps:"30s/side",rest:0,exId:"lunge"},{name:"Chest & Back Stretch",sets:1,reps:"30s",rest:0,exId:"pushup"}]},
+
+  { day:27, title:"Peak Day 5", phase:"Peak", rest:false, duration:45,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"50s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"40s",rest:10,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"35s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:5,reps:"30",rest:60,exId:"squat"},{name:"Push-Up",sets:5,reps:"20",rest:60,exId:"pushup"},{name:"Reverse Lunge",sets:5,reps:"15/leg",rest:60,exId:"lunge"},{name:"Mountain Climber",sets:5,reps:"60s",rest:45,exId:"mountainclimber"},{name:"Glute Bridge",sets:4,reps:"20",rest:45,exId:"glute_bridge"},{name:"Leg Raise",sets:4,reps:"15",rest:45,exId:"leg_raise"},{name:"Plank Hold",sets:4,reps:"50s",rest:45,exId:"plank"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:28, title:"Rest Before Finals", phase:"Peak", rest:true, duration:0,
+    warmup:[], main:[], cooldown:[]},
+
+  // WEEK 5: Finale
+  { day:29, title:"FINAL PUSH", phase:"Finale", rest:false, duration:50,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"60s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"45s",rest:10,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"40s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:6,reps:"30",rest:60,exId:"squat"},{name:"Push-Up",sets:6,reps:"20",rest:60,exId:"pushup"},{name:"Reverse Lunge",sets:5,reps:"15/leg",rest:60,exId:"lunge"},{name:"Diamond Push-Up",sets:4,reps:"12",rest:60,exId:"diamond_pushup"},{name:"Mountain Climber",sets:6,reps:"60s",rest:45,exId:"mountainclimber"},{name:"Plank Hold",sets:5,reps:"60s",rest:45,exId:"plank"},{name:"Leg Raise",sets:4,reps:"15",rest:45,exId:"leg_raise"}],
+    cooldown:[{name:"Full Body Stretch",sets:1,reps:"120s",rest:0,exId:"plank"}]},
+
+  { day:30, title:"CHALLENGE COMPLETE! 🏆", phase:"Finale", rest:false, duration:45,
+    warmup:[{name:"Jumping Jack",sets:1,reps:"60s",rest:10,exId:"jumpingjack"},{name:"High Knees",sets:1,reps:"45s",rest:10,exId:"high_knees"},{name:"Mountain Climber",sets:1,reps:"40s",rest:15,exId:"mountainclimber"}],
+    main:[{name:"Bodyweight Squat",sets:5,reps:"25",rest:60,exId:"squat"},{name:"Push-Up",sets:5,reps:"20",rest:60,exId:"pushup"},{name:"Reverse Lunge",sets:4,reps:"15/leg",rest:60,exId:"lunge"},{name:"Pike Push-Up",sets:4,reps:"12",rest:60,exId:"pike_pushup"},{name:"Mountain Climber",sets:5,reps:"60s",rest:45,exId:"mountainclimber"},{name:"Plank Hold",sets:5,reps:"60s",rest:45,exId:"plank"},{name:"Glute Bridge",sets:4,reps:"20",rest:45,exId:"glute_bridge"},{name:"Superman Hold",sets:3,reps:"15",rest:45,exId:"superman"}],
+    cooldown:[{name:"Celebration Stretch",sets:1,reps:"180s",rest:0,exId:"plank"}]}
+];
+
+const ACHIEVEMENTS = [
+  {id:'first', icon:'🏁', name:'First Step', desc:'Complete Day 1', check: s => s.completedDays.includes(1)},
+  {id:'week1', icon:'🌱', name:'Week One', desc:'Complete Week 1', check: s => [1,2,4,5,6].every(d=>s.completedDays.includes(d))},
+  {id:'halfway', icon:'⚡', name:'Halfway There', desc:'Complete Day 15', check: s => s.completedDays.includes(15)},
+  {id:'streak3', icon:'🔥', name:'On Fire', desc:'3-day streak', check: s => s.longestStreak >= 3},
+  {id:'streak7', icon:'🚀', name:'Weekly Warrior', desc:'7-day streak', check: s => s.longestStreak >= 7},
+  {id:'week3', icon:'💪', name:'Month Midpoint', desc:'Complete 21 workouts', check: s => s.completedDays.length >= 21},
+  {id:'done', icon:'🏆', name:'Champion', desc:'Complete all 30 days', check: s => s.completedDays.includes(30)},
+  {id:'perfect', icon:'⭐', name:'Perfect Month', desc:'No missed workouts', check: s => s.missedDays.length === 0 && s.completedDays.length === 30},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let state = {
+  startDate: null,
+  completedDays: [],
+  missedDays: [],
+  currentDay: 1,
+  longestStreak: 0,
+};
+
+let timerState = {
+  running: false, paused: false,
+  queueIndex: 0, queue: [],
+  secondsLeft: 0, totalSeconds: 0,
+  interval: null,
+};
+
+let viewingWorkoutDay = 1;
+
+// ═══════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════
+function saveState() {
+  try { localStorage.setItem('cali30_state', JSON.stringify(state)); } catch(e){}
+}
+function loadState() {
+  try {
+    const s = localStorage.getItem('cali30_state');
+    if (s) state = {...state, ...JSON.parse(s)};
+  } catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE NAV
+// ═══════════════════════════════════════════════════════════════
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links button').forEach(b => b.classList.remove('active'));
+  document.getElementById(`page-${name}`).classList.add('active');
+  const btns = document.querySelectorAll('.nav-links button');
+  const pages = ['dashboard','workout','calendar','exercises','stats'];
+  btns[pages.indexOf(name)]?.classList.add('active');
+
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'workout') renderWorkout();
+  if (name === 'calendar') renderCalendar();
+  if (name === 'exercises') renderExercises();
+  if (name === 'stats') renderStats();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CURRENT DAY CALCULATION
+// ═══════════════════════════════════════════════════════════════
+function getCurrentDay() {
+  if (!state.startDate) { state.startDate = new Date().toISOString().split('T')[0]; saveState(); }
+  const start = new Date(state.startDate);
+  const today = new Date();
+  const diff = Math.floor((today - start) / (1000*60*60*24));
+  return Math.min(Math.max(diff + 1, 1), 30);
+}
+
+function getStreak() {
+  let streak = 0;
+  for (let i = state.currentDay; i >= 1; i--) {
+    const d = PROGRAM[i-1];
+    if (d.rest) { if (streak > 0) continue; else continue; }
+    if (state.completedDays.includes(i)) streak++;
+    else break;
+  }
+  return streak;
+}
+
+function calcLongestStreak() {
+  let max = 0, cur = 0;
+  for (let i = 1; i <= 30; i++) {
+    if (PROGRAM[i-1].rest || state.completedDays.includes(i)) cur++;
+    else { max = Math.max(max, cur); cur = 0; }
+  }
+  return Math.max(max, cur);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+function renderDashboard() {
+  state.currentDay = getCurrentDay();
+  const streak = getStreak();
+  const completed = state.completedDays.length;
+  const pct = Math.round(completed/30*100);
+
+  document.getElementById('hero-day-label').textContent = `DAY ${state.currentDay} OF 30`;
+  document.getElementById('stat-current-day').textContent = state.currentDay;
+  document.getElementById('stat-streak').textContent = streak;
+  document.getElementById('stat-completed').textContent = completed;
+  document.getElementById('stat-percent').textContent = pct + '%';
+  document.getElementById('progress-label').textContent = `${completed} / 30 days`;
+  document.getElementById('main-progress-bar').style.width = pct + '%';
+
+  renderTodayCard();
+  renderWeekOverview();
+}
+
+function renderTodayCard() {
+  const d = PROGRAM[state.currentDay - 1];
+  if (!d) return;
+  const done = state.completedDays.includes(state.currentDay);
+
+  document.getElementById('today-title').textContent = d.title;
+
+  const meta = document.getElementById('today-meta');
+  meta.innerHTML = '';
+  if (!d.rest) {
+    meta.innerHTML = `
+      <div class="meta-chip"><span class="dot" style="background:var(--accent3)"></span> ${d.phase} Phase</div>
+      <div class="meta-chip"><span class="dot" style="background:var(--accent2)"></span> ~${d.duration} min</div>
+      <div class="meta-chip"><span class="dot" style="background:var(--success)"></span> ${d.main.length} exercises</div>
+    `;
+  } else {
+    meta.innerHTML = `<div class="meta-chip" style="border-color:var(--accent2);color:var(--accent2)">🌿 Rest & Recover</div>`;
+  }
+
+  const exList = document.getElementById('today-exercises');
+  exList.innerHTML = '';
+  if (!d.rest && d.main.length > 0) {
+    d.main.slice(0,4).forEach(ex => {
+      exList.innerHTML += `
+        <div class="exercise-row ${done ? 'completed-ex' : ''}">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-detail">${ex.sets} sets</div>
+          </div>
+          <div class="ex-badge">${ex.reps}</div>
+        </div>`;
+    });
+    if (d.main.length > 4) {
+      exList.innerHTML += `<div style="text-align:center;font-size:13px;color:var(--text2);padding:8px">+${d.main.length-4} more exercises</div>`;
+    }
+  } else if (d.rest && d.day !== 7 && d.day !== 14 && d.day !== 21 && d.day !== 28) {
+    d.main.forEach(ex => {
+      exList.innerHTML += `<div class="exercise-row"><div><div class="ex-name">${ex.name}</div></div><div class="ex-badge rest">${ex.reps}</div></div>`;
+    });
+  }
+
+  const actions = document.getElementById('today-actions');
+  actions.innerHTML = '';
+  if (!done) {
+    actions.innerHTML = `
+      <button class="btn btn-primary" onclick="showPage('workout')">▶ Start Workout</button>
+      <button class="btn btn-secondary" onclick="completeDay()">✓ Mark Complete</button>
+    `;
+  } else {
+    actions.innerHTML = `<div style="color:var(--success);font-weight:600;display:flex;align-items:center;gap:8px;font-size:16px">✓ Completed! Great work today.</div>`;
+  }
+}
+
+function renderWeekOverview() {
+  const weekStart = Math.floor((state.currentDay - 1) / 7) * 7 + 1;
+  const bar = document.getElementById('week-overview-bar');
+  const labels = document.getElementById('week-days-labels');
+  bar.innerHTML = ''; labels.innerHTML = '';
+  const DAY_NAMES = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  for (let i = 0; i < 7; i++) {
+    const day = weekStart + i;
+    if (day > 30) break;
+    const prog = PROGRAM[day - 1];
+    const done = state.completedDays.includes(day);
+    const isToday = day === state.currentDay;
+    let h = 0, color = 'var(--bg3)';
+    if (done) { h = 70; color = 'var(--success)'; }
+    else if (isToday) { h = 40; color = 'var(--accent)'; }
+    else if (prog?.rest) { h = 20; color = 'var(--accent2)'; }
+    bar.innerHTML += `<div class="week-col"><div class="week-col-bar ${h===0?'empty':''}" style="height:${h}px;background:${color};"></div></div>`;
+    labels.innerHTML += `<div class="week-col-label" style="flex:1;text-align:center;font-size:11px;color:${isToday?'var(--accent)':'var(--text3)'};font-family:var(--font-mono);">${DAY_NAMES[i]}<br><span style="color:${isToday?'var(--accent)':'var(--text3)'}">${day}</span></div>`;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORKOUT PAGE
+// ═══════════════════════════════════════════════════════════════
+function renderWorkout() {
+  const d = PROGRAM[viewingWorkoutDay - 1];
+  document.getElementById('workout-day-label').textContent = `DAY ${d.day} — ${d.phase.toUpperCase()}`;
+  document.getElementById('workout-title').textContent = d.title;
+
+  const phases = document.getElementById('workout-phases');
+  phases.innerHTML = '';
+
+  if (d.rest && d.main.length === 0) {
+    phases.innerHTML = `<div class="card" style="text-align:center;padding:48px">
+      <div style="font-size:48px;margin-bottom:16px">🌿</div>
+      <h3>Rest Day</h3>
+      <p class="text-muted" style="margin-top:8px">Today is a full rest day. Hydrate, sleep, and let your body recover.</p>
+    </div>`;
+    document.getElementById('timer-section').style.display = 'none';
+    return;
+  }
+  document.getElementById('timer-section').style.display = 'block';
+
+  const renderPhase = (label, exercises, cls) => {
+    if (!exercises || exercises.length === 0) return;
+    let html = `<div class="phase-section"><div class="phase-header"><div class="phase-badge ${cls}">${label}</div></div>`;
+    exercises.forEach(ex => {
+      html += `<div class="exercise-row">
+        <div><div class="ex-name">${ex.name}</div><div class="ex-detail">${ex.sets > 1 ? ex.sets + ' sets · ' : ''}${ex.reps}</div></div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div class="ex-badge">${ex.sets}×${ex.reps}</div>
+          ${ex.rest > 0 ? `<div class="ex-badge rest">${ex.rest}s rest</div>` : ''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    phases.innerHTML += html;
+  };
+
+  renderPhase('Warm-Up', d.warmup, 'warmup');
+  renderPhase('Main Workout', d.main, 'main');
+  renderPhase('Cool-Down', d.cooldown, 'cooldown');
+
+  buildTimerQueue(d);
+  timerReset();
+}
+
+function changeWorkoutDay(dir) {
+  viewingWorkoutDay = Math.min(Math.max(viewingWorkoutDay + dir, 1), 30);
+  timerStop();
+  renderWorkout();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════════════════
+function buildTimerQueue(d) {
+  timerState.queue = [];
+  const addPhase = (exercises, phaseName) => {
+    exercises.forEach(ex => {
+      const secs = parseRepToSeconds(ex.reps);
+      for (let s = 0; s < ex.sets; s++) {
+        timerState.queue.push({ name: ex.name, label: phaseName, type:'work', seconds: secs > 0 ? secs : 40, set: s+1, totalSets: ex.sets });
+        if (ex.rest > 0 && (s < ex.sets - 1)) {
+          timerState.queue.push({ name: `Rest — ${ex.name}`, label: 'REST', type:'rest', seconds: ex.rest });
+        }
+      }
+    });
+  };
+  const all = [...(d.warmup||[]), ...(d.main||[]), ...(d.cooldown||[])];
+  addPhase(d.warmup||[], 'WARM-UP');
+  addPhase(d.main||[], 'MAIN');
+  addPhase(d.cooldown||[], 'COOL-DOWN');
+}
+
+function parseRepToSeconds(reps) {
+  const m = String(reps).match(/(\d+)s/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function timerReset() {
+  timerStop();
+  timerState.queueIndex = 0;
+  timerState.running = false; timerState.paused = false;
+  const d = PROGRAM[viewingWorkoutDay-1];
+  buildTimerQueue(d);
+  const first = timerState.queue[0];
+  if (first) updateTimerUI(first.name, first.label, first.seconds, first.seconds, false);
+  else updateTimerUI('Ready', 'TIMER', 30, 30, false);
+  document.getElementById('btn-timer-start').disabled = false;
+  document.getElementById('btn-timer-pause').disabled = true;
+  document.getElementById('btn-timer-skip').disabled = true;
+  updateTimerProgress();
+}
+
+function timerStart() {
+  if (timerState.queue.length === 0) return;
+  if (timerState.paused) {
+    timerState.paused = false;
+    timerState.running = true;
+    timerState.interval = setInterval(timerTick, 1000);
+    document.getElementById('btn-timer-pause').disabled = false;
+    return;
+  }
+  timerState.running = true;
+  timerState.paused = false;
+  const item = timerState.queue[timerState.queueIndex];
+  timerState.secondsLeft = item.seconds;
+  timerState.totalSeconds = item.seconds;
+  updateTimerUI(item.name, item.label, item.seconds, item.seconds, item.type==='rest');
+  document.getElementById('btn-timer-start').disabled = true;
+  document.getElementById('btn-timer-pause').disabled = false;
+  document.getElementById('btn-timer-skip').disabled = false;
+  timerState.interval = setInterval(timerTick, 1000);
+}
+
+function timerPause() {
+  if (!timerState.running) return;
+  clearInterval(timerState.interval);
+  timerState.running = false; timerState.paused = true;
+  document.getElementById('btn-timer-start').disabled = false;
+  document.getElementById('btn-timer-start').textContent = '▶ RESUME';
+  document.getElementById('btn-timer-pause').disabled = true;
+}
+
+function timerStop() {
+  clearInterval(timerState.interval);
+  timerState.running = false; timerState.paused = false;
+}
+
+function timerSkip() {
+  clearInterval(timerState.interval);
+  timerState.queueIndex++;
+  if (timerState.queueIndex >= timerState.queue.length) {
+    timerDone(); return;
+  }
+  const item = timerState.queue[timerState.queueIndex];
+  timerState.secondsLeft = item.seconds;
+  timerState.totalSeconds = item.seconds;
+  updateTimerUI(item.name, item.label, item.seconds, item.seconds, item.type==='rest');
+  timerState.interval = setInterval(timerTick, 1000);
+  updateTimerProgress();
+}
+
+function timerTick() {
+  timerState.secondsLeft--;
+  const item = timerState.queue[timerState.queueIndex];
+  if (timerState.secondsLeft <= 0) {
+    clearInterval(timerState.interval);
+    timerState.queueIndex++;
+    if (timerState.queueIndex >= timerState.queue.length) {
+      timerDone(); return;
+    }
+    const next = timerState.queue[timerState.queueIndex];
+    timerState.secondsLeft = next.seconds;
+    timerState.totalSeconds = next.seconds;
+    updateTimerUI(next.name, next.label, next.seconds, next.seconds, next.type==='rest');
+    updateTimerProgress();
+    timerState.interval = setInterval(timerTick, 1000);
+    return;
+  }
+  updateTimerUI(item.name, item.label, timerState.secondsLeft, timerState.totalSeconds, item.type==='rest');
+}
+
+function timerDone() {
+  timerState.running = false;
+  const big = document.getElementById('timer-big');
+  const ring = document.getElementById('timer-ring-fg');
+  big.textContent = '✓';
+  big.className = 'big';
+  document.querySelector('.timer-center .small').textContent = 'DONE';
+  document.getElementById('timer-phase-label').textContent = 'WORKOUT COMPLETE';
+  document.getElementById('timer-exercise-name').textContent = 'Amazing work! 💪';
+  ring.style.strokeDashoffset = '0';
+  document.getElementById('btn-timer-start').disabled = true;
+  document.getElementById('btn-timer-pause').disabled = true;
+  document.getElementById('btn-timer-skip').disabled = true;
+  document.getElementById('timer-progress-info').textContent = `All ${timerState.queue.length} intervals complete!`;
+  showToast('Workout complete! Mark day as done!', 'success');
+}
+
+function updateTimerUI(name, label, secsLeft, total, isRest) {
+  const warn = secsLeft <= 5 && secsLeft > 0;
+  const big = document.getElementById('timer-big');
+  const ring = document.getElementById('timer-ring-fg');
+  big.textContent = secsLeft;
+  big.className = 'big' + (isRest ? ' resting' : warn ? ' warning' : '');
+  document.getElementById('timer-phase-label').textContent = label;
+  document.getElementById('timer-exercise-name').textContent = name;
+  document.querySelector('.timer-center .small').textContent = 'SECONDS';
+  const circumference = 515;
+  const offset = circumference - (circumference * secsLeft / total);
+  ring.style.strokeDashoffset = offset;
+  ring.className = 'fg' + (isRest ? ' resting' : warn ? ' warning' : '');
+}
+
+function updateTimerProgress() {
+  const el = document.getElementById('timer-progress-info');
+  const total = timerState.queue.length;
+  const cur = timerState.queueIndex + 1;
+  el.textContent = `Interval ${Math.min(cur, total)} of ${total}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDAR
+// ═══════════════════════════════════════════════════════════════
+function renderCalendar() {
+  const headerRow = document.getElementById('cal-header-row');
+  const grid = document.getElementById('calendar-grid');
+  const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  headerRow.innerHTML = DAYS.map(d => `<div class="cal-header">${d}</div>`).join('');
+
+  const startDate = state.startDate ? new Date(state.startDate) : new Date();
+  const startDow = startDate.getDay();
+  grid.innerHTML = '';
+
+  for (let i = 0; i < startDow; i++) grid.innerHTML += `<div class="cal-day empty"></div>`;
+
+  for (let day = 1; day <= 30; day++) {
+    const prog = PROGRAM[day - 1];
+    const isCurrent = day === state.currentDay;
+    const isCompleted = state.completedDays.includes(day);
+    const isMissed = state.missedDays.includes(day);
+    const isFuture = day > state.currentDay;
+    const isRest = prog?.rest;
+
+    let cls = 'cal-day ';
+    if (isCurrent) cls += 'current';
+    else if (isCompleted) cls += 'completed';
+    else if (isMissed) cls += 'missed';
+    else if (isRest && !isFuture) cls += 'rest-day';
+    else cls += 'future';
+
+    const icons = {Foundation:'🌱', Building:'🔨', Intensity:'⚡', Peak:'🏔', Finale:'🏆'};
+    const icon = prog ? (icons[prog.phase] || '') : '';
+
+    grid.innerHTML += `<div class="${cls}" onclick="selectCalDay(${day})">
+      <div class="day-num">${day}</div>
+      <div class="day-icon">${isRest ? '💤' : icon}</div>
+    </div>`;
+  }
+}
+
+function selectCalDay(day) {
+  const d = PROGRAM[day - 1];
+  if (!d) return;
+  const el = document.getElementById('cal-selected-day');
+  const done = state.completedDays.includes(day);
+  const icons = {Foundation:'🌱', Building:'🔨', Intensity:'⚡', Peak:'🏔', Finale:'🏆'};
+
+  let html = `<div class="flex-between mb-16">
+    <div><div class="label mb-8">Day ${day} — ${d.phase}</div><h3>${d.title}</h3></div>
+    <div>${done ? '<span style="color:var(--success);font-size:20px">✓</span>' : ''}</div>
+  </div>`;
+
+  if (d.rest && d.main.length === 0) {
+    html += `<p class="text-muted">🌿 Rest day — no workout scheduled.</p>`;
+  } else {
+    html += `<div class="flex gap-8 mb-16" style="flex-wrap:wrap;">
+      <span class="chip">⏱ ~${d.duration}min</span>
+      <span class="chip">${icons[d.phase]} ${d.phase}</span>
+      <span class="chip">💪 ${d.main.length} exercises</span>
+    </div>`;
+    d.main.forEach(ex => {
+      html += `<div class="exercise-row">
+        <div><div class="ex-name">${ex.name}</div><div class="ex-detail">${ex.sets} sets</div></div>
+        <div class="ex-badge">${ex.reps}</div>
+      </div>`;
+    });
+  }
+
+  if (day <= state.currentDay && !d.rest) {
+    html += `<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" onclick="viewingWorkoutDay=${day};showPage('workout')">▶ View Workout</button>
+      ${!done ? `<button class="btn btn-primary btn-sm" onclick="completeDayDirect(${day})">✓ Mark Done</button>` : ''}
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXERCISES PAGE
+// ═══════════════════════════════════════════════════════════════
+const SVG_DEMOS = {
+  pushup: {
+    name: "Push-Up", muscles: "Chest, Triceps", tag: "Upper Body",
+    svg: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .pb { animation: pbounce 1.5s ease-in-out infinite; transform-origin: 60px 60px; }
+        @keyframes pbounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        .pa { animation: parms 1.5s ease-in-out infinite; }
+        @keyframes parms { 0%,100%{transform:rotate(0deg) translateY(0)} 50%{transform:rotate(-15deg) translateY(-8px)} }
+      </style>
+      <g class="pb">
+        <ellipse cx="60" cy="38" rx="10" ry="12" fill="#e8ff47" opacity="0.9"/>
+        <line x1="60" y1="50" x2="60" y2="72" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="56" x2="38" y2="68" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="60" y1="56" x2="82" y2="68" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="60" y1="72" x2="48" y2="88" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="60" y1="72" x2="72" y2="88" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="38" cy="70" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="82" cy="70" r="4" fill="#47ffe0" opacity="0.8"/>
+      </g>
+    </svg>`
+  },
+  squat: {
+    name: "Squat", muscles: "Quads, Glutes", tag: "Lower Body",
+    svg: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .sb { animation: sqbounce 1.8s ease-in-out infinite; transform-origin: 60px 55px; }
+        @keyframes sqbounce { 0%,100%{transform:scaleY(1) translateY(0)} 50%{transform:scaleY(0.8) translateY(8px)} }
+      </style>
+      <g class="sb">
+        <ellipse cx="60" cy="22" rx="10" ry="11" fill="#e8ff47" opacity="0.9"/>
+        <line x1="60" y1="33" x2="60" y2="55" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="40" x2="40" y2="50" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="60" y1="40" x2="80" y2="50" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="60" y1="55" x2="44" y2="75" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="55" x2="76" y2="75" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="44" y1="75" x2="40" y2="92" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="76" y1="75" x2="80" y2="92" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="40" cy="50" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="80" cy="50" r="4" fill="#47ffe0" opacity="0.8"/>
+      </g>
+    </svg>`
+  },
+  plank: {
+    name: "Plank", muscles: "Core, Shoulders", tag: "Core",
+    svg: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .plk { animation: plank 2s ease-in-out infinite; transform-origin: 60px 58px; }
+        @keyframes plank { 0%,100%{transform:scaleY(1)} 50%{transform:scaleY(1.04)} }
+      </style>
+      <g class="plk">
+        <ellipse cx="92" cy="40" rx="9" ry="10" fill="#e8ff47" opacity="0.9"/>
+        <line x1="83" y1="48" x2="35" y2="58" stroke="#e8ff47" stroke-width="5" stroke-linecap="round"/>
+        <line x1="75" y1="52" x2="75" y2="72" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="55" y1="56" x2="55" y2="75" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="35" y1="58" x2="20" y2="70" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="20" y1="70" x2="22" y2="82" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="20" cy="70" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="55" cy="75" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="75" cy="72" r="4" fill="#47ffe0" opacity="0.8"/>
+      </g>
+    </svg>`
+  },
+  lunge: {
+    name: "Lunge", muscles: "Quads, Glutes", tag: "Lower Body",
+    svg: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .lg { animation: lstep 1.8s ease-in-out infinite; transform-origin: 58px 55px; }
+        @keyframes lstep { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+      </style>
+      <g class="lg">
+        <ellipse cx="58" cy="18" rx="9" ry="10" fill="#e8ff47" opacity="0.9"/>
+        <line x1="58" y1="28" x2="58" y2="52" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="58" y1="36" x2="38" y2="44" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="58" y1="36" x2="75" y2="42" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="58" y1="52" x2="42" y2="78" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="58" y1="52" x2="74" y2="65" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="42" y1="78" x2="28" y2="90" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="74" y1="65" x2="88" y2="75" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="28" cy="90" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="88" cy="75" r="4" fill="#47ffe0" opacity="0.8"/>
+      </g>
+    </svg>`
+  },
+  jumpingjack: {
+    name: "Jumping Jack", muscles: "Full Body, Cardio", tag: "Cardio",
+    svg: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .jj { animation: jjump 1s ease-in-out infinite; transform-origin: 60px 55px; }
+        @keyframes jjump {
+          0%,100%{transform:scaleX(0.7) scaleY(0.95) translateY(4px)}
+          50%{transform:scaleX(1) scaleY(1) translateY(-4px)}
+        }
+      </style>
+      <g class="jj">
+        <ellipse cx="60" cy="20" rx="9" ry="10" fill="#e8ff47" opacity="0.9"/>
+        <line x1="60" y1="30" x2="60" y2="58" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="38" x2="32" y2="22" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="60" y1="38" x2="88" y2="22" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="32" cy="22" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="88" cy="22" r="4" fill="#47ffe0" opacity="0.8"/>
+        <line x1="60" y1="58" x2="35" y2="82" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <line x1="60" y1="58" x2="85" y2="82" stroke="#e8ff47" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="35" cy="82" r="4" fill="#47ffe0" opacity="0.8"/>
+        <circle cx="85" cy="82" r="4" fill="#47ffe0" opacity="0.8"/>
+      </g>
+    </svg>`
+  },
+  mountainclimber: {
+    name: "Mountain Climber", muscles: "Core, Cardio", tag: "Core + Cardio",
+    svg: `<svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+      <style>
+        .mk { animation: mclimb 0.9s ease-in-out infinite; transform-origin: 60px 55px; }
+        @keyframes mclimb {
+          0%,100%{transform:translateX(0)}
+          50%{transform:translateX(4px)}
+        }
+        .mk2 { animation: mclimb2 0.9s ease-in-out infinite; }
+        @keyframes mclimb2 {
+          0%,100%{transform:translateX(0) translateY(0)}
+          50%{transform:translateX(-6px) translateY(5px)}
+        }
+      </style>
+      <g>
+        <ellipse cx="90" cy="30" rx="9" ry="10" fill="#e8ff47" opacity="0.9" class="mk"/>
+        <line x1="81" y1="38" x2="30" y2="55" stroke="#e8ff47" stroke-width="4.5" stroke-linecap="round" class="mk"/>
+        <line x1="70" y1="43" x2="70" y2="60" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round" class="mk"/>
+        <line x1="50" y1="49" class="mk2" x2="44" y2="68" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round"/>
+        <line x1="30" y1="55" x2="22" y2="68" stroke="#e8ff47" stroke-width="3.5" stroke-linecap="round" class="mk"/>
+        <line x1="22" y1="68" x2="18" y2="82" stroke="#e8ff47" stroke-width="3" stroke-linecap="round" class="mk"/>
+        <circle cx="70" cy="62" r="4" fill="#47ffe0" opacity="0.8" class="mk"/>
+        <circle cx="18" cy="82" r="4" fill="#47ffe0" opacity="0.8"/>
+      </g>
+    </svg>`
+  }
+};
+
+function renderExercises() {
+  const demoGrid = document.getElementById('svg-demo-grid');
+  demoGrid.innerHTML = '';
+  Object.entries(SVG_DEMOS).forEach(([id, demo]) => {
+    demoGrid.innerHTML += `
+      <div class="demo-card" onclick="openExModal('${id}')">
+        ${demo.svg}
+        <div class="demo-title">${demo.name}</div>
+        <div class="demo-muscle">${demo.muscles}</div>
+        <div class="demo-tag">${demo.tag}</div>
+      </div>`;
+  });
+  renderLibrary(Object.entries(EXERCISES));
+}
+
+function renderLibrary(entries) {
+  const grid = document.getElementById('lib-grid');
+  grid.innerHTML = '';
+  entries.forEach(([id, ex]) => {
+    grid.innerHTML += `
+      <div class="lib-card" onclick="toggleLibCard(this,'${id}')">
+        <div class="lib-card-header">
+          <h4>${ex.name}</h4>
+          <span class="lib-diff diff-${ex.difficulty}">${ex.difficulty}</span>
+        </div>
+        <div class="lib-muscles">💪 ${ex.muscles}</div>
+        <div class="lib-desc">${ex.desc}</div>
+        <div class="lib-steps" id="lib-steps-${id}">
+          <ol>${ex.steps.map(s=>`<li>${s}</li>`).join('')}</ol>
+          ${ex.tip ? `<p style="margin-top:10px;font-size:12px;color:var(--accent);background:rgba(232,255,71,0.08);padding:8px 12px;border-radius:8px">💡 ${ex.tip}</p>` : ''}
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text3);font-family:var(--font-mono)">Tap to ${id === 'toggled' ? 'hide' : 'see'} steps ▾</div>
+      </div>`;
+  });
+}
+
+function toggleLibCard(el, id) {
+  const steps = document.getElementById(`lib-steps-${id}`);
+  steps.classList.toggle('open');
+}
+
+function filterLibrary(q) {
+  const filtered = Object.entries(EXERCISES).filter(([id, ex]) =>
+    ex.name.toLowerCase().includes(q.toLowerCase()) ||
+    ex.muscles.toLowerCase().includes(q.toLowerCase()) ||
+    ex.desc.toLowerCase().includes(q.toLowerCase())
+  );
+  renderLibrary(filtered);
+}
+
+function openExModal(id) {
+  const ex = EXERCISES[id];
+  if (!ex) return;
+  document.getElementById('modal-label').textContent = 'Exercise Guide';
+  document.getElementById('modal-title').textContent = ex.name;
+  const svgDemo = SVG_DEMOS[id];
+  document.getElementById('modal-body').innerHTML = `
+    ${svgDemo ? `<div style="text-align:center;margin-bottom:16px">${svgDemo.svg}</div>` : ''}
+    <div class="chip mb-16" style="border-color:var(--accent2);color:var(--accent2)">💪 ${ex.muscles}</div>
+    <p style="color:var(--text2);margin-bottom:16px;font-size:14px">${ex.desc}</p>
+    <div class="label mb-8">Steps</div>
+    <ol style="padding-left:18px">${ex.steps.map(s=>`<li style="color:var(--text2);font-size:14px;margin-bottom:8px">${s}</li>`).join('')}</ol>
+    ${ex.tip ? `<div style="margin-top:16px;background:rgba(232,255,71,0.08);border:1px solid rgba(232,255,71,0.2);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--accent)">💡 ${ex.tip}</div>` : ''}
+  `;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STATS
+// ═══════════════════════════════════════════════════════════════
+function renderStats() {
+  const completed = state.completedDays.length;
+  const totalMins = state.completedDays.reduce((acc,d) => acc + (PROGRAM[d-1]?.duration||0), 0);
+  const longestStreak = calcLongestStreak();
+  state.longestStreak = longestStreak;
+  const pct = completed > 0 ? Math.round(completed/30*100) : 0;
+
+  document.getElementById('s-total-workouts').textContent = completed;
+  document.getElementById('s-total-mins').textContent = totalMins;
+  document.getElementById('s-longest-streak').textContent = longestStreak;
+  document.getElementById('s-completion').textContent = pct + '%';
+
+  // Weekly chart
+  const wc = document.getElementById('weekly-chart');
+  wc.innerHTML = '';
+  for (let w = 0; w < 5; w++) {
+    const start = w * 7 + 1;
+    const end = Math.min(start + 6, 30);
+    const days = [];
+    for (let d = start; d <= end; d++) days.push(d);
+    const weekDone = days.filter(d => state.completedDays.includes(d) || PROGRAM[d-1]?.rest).length;
+    const total = days.length;
+    wc.innerHTML += `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="min-width:64px;font-family:var(--font-mono);font-size:11px;color:var(--text3)">WEEK ${w+1}</div>
+        <div style="flex:1;background:var(--bg3);border-radius:6px;height:20px;overflow:hidden">
+          <div style="height:100%;width:${Math.round(weekDone/total*100)}%;background:${w===3?'var(--accent3)':w===4?'var(--success)':'var(--accent)'};border-radius:6px;transition:width 0.6s ease"></div>
+        </div>
+        <div style="min-width:40px;text-align:right;font-size:13px;color:var(--text2);font-family:var(--font-mono)">${weekDone}/${total}</div>
+      </div>`;
+  }
+
+  // Achievements
+  const ag = document.getElementById('achievements-grid');
+  ag.innerHTML = '';
+  ACHIEVEMENTS.forEach(ach => {
+    const unlocked = ach.check(state);
+    ag.innerHTML += `
+      <div class="achievement ${unlocked ? 'unlocked' : ''}">
+        <div class="ach-icon">${ach.icon}</div>
+        <div class="ach-name">${ach.name}</div>
+        <div class="ach-desc">${ach.desc}</div>
+      </div>`;
+  });
+
+  // Phase progress
+  const phases = ['Foundation','Building','Intensity','Peak','Finale'];
+  const pp = document.getElementById('phase-progress');
+  pp.innerHTML = '';
+  phases.forEach(ph => {
+    const phDays = PROGRAM.filter(d => d.phase === ph && !d.rest);
+    const done = phDays.filter(d => state.completedDays.includes(d.day)).length;
+    const pct2 = phDays.length > 0 ? Math.round(done/phDays.length*100) : 0;
+    pp.innerHTML += `
+      <div style="margin-bottom:14px">
+        <div class="flex-between mb-8">
+          <span style="font-weight:600;font-size:14px">${ph}</span>
+          <span style="font-family:var(--font-mono);font-size:12px;color:var(--text2)">${done}/${phDays.length}</span>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" style="width:${pct2}%"></div>
+        </div>
+      </div>`;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPLETE DAY
+// ═══════════════════════════════════════════════════════════════
+function completeDay() {
+  const day = viewingWorkoutDay || state.currentDay;
+  completeDayDirect(day);
+}
+
+function completeDayDirect(day) {
+  if (state.completedDays.includes(day)) {
+    showToast('Already completed!', 'info'); return;
+  }
+  state.completedDays.push(day);
+  state.longestStreak = calcLongestStreak();
+  saveState();
+  showToast(`Day ${day} complete! 💪`, 'success');
+  if (day === 30) { setTimeout(launchConfetti, 300); }
+  renderDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILITIES
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+function closeModal(e) { if (e.target === document.getElementById('modal-overlay')) closeModalDirect(); }
+function closeModalDirect() { document.getElementById('modal-overlay').classList.remove('open'); }
+
+function launchConfetti() {
+  const colors = ['#e8ff47','#47ffe0','#ff6b47','#ffffff','#ffcc47'];
+  for (let i = 0; i < 80; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left:${Math.random()*100}vw; top:-20px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-delay:${Math.random()*1}s;
+      animation-duration:${2+Math.random()*1.5}s;
+      transform:rotate(${Math.random()*360}deg);
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 4000);
+  }
+}
+
+function exportProgress() {
+  const data = {
+    exportDate: new Date().toISOString(),
+    startDate: state.startDate,
+    currentDay: state.currentDay,
+    completedDays: state.completedDays,
+    longestStreak: state.longestStreak,
+    totalWorkouts: state.completedDays.length,
+    totalMinutes: state.completedDays.reduce((a,d)=>a+(PROGRAM[d-1]?.duration||0),0),
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='cali30-progress.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Progress exported!', 'success');
+}
+
+function confirmReset() {
+  openModalDirect('Reset Challenge', `
+    <p style="color:var(--text2);margin-bottom:20px">Are you sure you want to reset all progress? This cannot be undone.</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-danger" onclick="resetChallenge()">Yes, Reset Everything</button>
+      <button class="btn btn-secondary" onclick="closeModalDirect()">Cancel</button>
+    </div>
+  `);
+}
+
+function openModalDirect(title, body) {
+  document.getElementById('modal-label').textContent = 'Confirm';
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function resetChallenge() {
+  state = { startDate: new Date().toISOString().split('T')[0], completedDays: [], missedDays: [], currentDay: 1, longestStreak: 0 };
+  saveState();
+  closeModalDirect();
+  showToast('Challenge reset. Day 1 starts now!', 'info');
+  viewingWorkoutDay = 1;
+  showPage('dashboard');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+loadState();
+if (!state.startDate) { state.startDate = new Date().toISOString().split('T')[0]; saveState(); }
+state.currentDay = getCurrentDay();
+viewingWorkoutDay = state.currentDay;
+renderDashboard();
+</script>
 </body>
 </html>
